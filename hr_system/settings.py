@@ -180,6 +180,8 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
     'EXCEPTION_HANDLER': 'accounts.exceptions.custom_exception_handler',
+    'DATETIME_FORMAT': "%Y-%m-%d %H:%M:%S",   # مثال: 2025-09-13 17:43:00
+    'DATE_FORMAT': "%Y-%m-%d",                # مثال: 2025-09-13
 }
 
 # Token expiration time (15 minutes)

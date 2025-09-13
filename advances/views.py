@@ -561,11 +561,11 @@ from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.exceptions import ValidationError
 from .models import AdvanceRequest, AdvancePeriod
 from .serializers import AdvanceRequestSerializer
 from decimal import Decimal
 from django.core.exceptions import ValidationError as DjangoValidationError
+
 class AdvanceRequestViewSet(viewsets.ModelViewSet):
     serializer_class = AdvanceRequestSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -583,30 +583,58 @@ class AdvanceRequestViewSet(viewsets.ModelViewSet):
                 "success": True,
                 "message": "تم تسجيل طلب السلفة بنجاح.",
                 "data": response.data
-            }, status=status.HTTP_201_CREATED)
-        except ValidationError as e:
-            raise e
+            }, status=200)
+        except Exception as e:
+            return Response({"success": False, "message": str(e)}, status=200)
 
     def update(self, request, *args, **kwargs):
         """تعديل طلب سلفة"""
+        instance = self.get_object()
+
+        # تحقق الصلاحيات
+        if instance.user != self.request.user:
+            return Response({"success": False, "message": "لا تملك صلاحية تعديل هذا الطلب."}, status=200)
+
+        today = timezone.localdate()
+        if not (instance.period.start_date <= today <= instance.period.end_date and instance.period.is_active):
+            return Response({"success": False, "message": "لا يمكن تعديل طلب السلفة لأن الفترة مغلقة."}, status=200)
+
+        if instance.status != "UNDER_REVIEW" or instance.locked or instance.admin_decision or getattr(instance, "user_locked", False):
+            return Response({"success": False, "message": "لا يمكن تعديل طلب السلفة بعد وجود قرار مبدئي أو تأكيد."}, status=200)
+
+        # محاولة التعديل
         try:
             response = super().update(request, *args, **kwargs)
             return Response({
                 "success": True,
                 "message": "تم تعديل طلب السلفة بنجاح.",
                 "data": response.data
-            }, status=status.HTTP_200_OK)
-        except ValidationError as e:
-            raise e
+            }, status=200)
+        except DjangoValidationError as e:
+            messages = []
+            if hasattr(e, "message_dict"):
+                for _, errs in e.message_dict.items():
+                    messages.extend(errs)
+            elif hasattr(e, "messages"):
+                messages.extend(e.messages)
+            return Response({"success": False, "message": " ".join(messages)}, status=200)
 
     def destroy(self, request, *args, **kwargs):
         """حذف طلب سلفة"""
         instance = self.get_object()
-        self.perform_destroy(instance)
-        return Response({
-            "success": True,
-            "message": "تم حذف طلب السلفة بنجاح."
-        }, status=status.HTTP_200_OK)
+
+        if instance.user != self.request.user:
+            return Response({"success": False, "message": "لا تملك صلاحية حذف هذا الطلب."}, status=200)
+
+        today = timezone.localdate()
+        if not (instance.period.start_date <= today <= instance.period.end_date and instance.period.is_active):
+            return Response({"success": False, "message": "لا يمكن حذف طلب السلفة لأن الفترة مغلقة."}, status=200)
+
+        if instance.status != "UNDER_REVIEW" or instance.locked or instance.admin_decision or getattr(instance, "user_locked", False):
+            return Response({"success": False, "message": "لا يمكن حذف طلب السلفة بعد وجود قرار مبدئي أو تأكيد."}, status=200)
+
+        instance.delete()
+        return Response({"success": True, "message": "تم حذف طلب السلفة بنجاح."}, status=200)
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -619,15 +647,14 @@ class AdvanceRequestViewSet(viewsets.ModelViewSet):
         ).first()
 
         if not active_period:
-            raise ValidationError({"success": False, "message": "لا توجد فترة سلف متاحة حالياً."})
+            raise DjangoValidationError("لا توجد فترة سلف متاحة حالياً.")
 
-        # ✅ تحقق يدوي قبل الحفظ
         if AdvanceRequest.objects.filter(
             user=user,
             advance_type=active_period.advance_type,
             period=active_period
         ).exists():
-            raise ValidationError({"success": False, "message": "لديك بالفعل طلب سلفة مسجل لهذه الفترة."})
+            raise DjangoValidationError("لديك بالفعل طلب سلفة مسجل لهذه الفترة.")
 
         try:
             serializer.save(
@@ -642,45 +669,9 @@ class AdvanceRequestViewSet(viewsets.ModelViewSet):
                     messages.extend(errs)
             elif hasattr(e, "messages"):
                 messages.extend(e.messages)
-            raise ValidationError({"success": False, "message": " ".join(messages)})
-
-    def perform_update(self, serializer):
-        instance = self.get_object()
-
-        # 1. ممنوع لو المستخدم مش صاحب الطلب
-        if instance.user != self.request.user:
-            raise ValidationError({"success": False, "message": "لا تملك صلاحية تعديل هذا الطلب."})
-
-        # 2. ممنوع لو الفترة مقفولة
-        today = timezone.localdate()
-        if not (instance.period.start_date <= today <= instance.period.end_date and instance.period.is_active):
-            raise ValidationError({"success": False, "message": "لا يمكن تعديل طلب السلفة لأن الفترة مغلقة."})
-
-        # 3. جرب التعديل مع التحقق من شروط القيمة
-        try:
-            serializer.save()
-        except DjangoValidationError as e:
-            messages = []
-            if hasattr(e, "message_dict"):
-                for _, errs in e.message_dict.items():
-                    messages.extend(errs)
-            elif hasattr(e, "messages"):
-                messages.extend(e.messages)
-            raise ValidationError({"success": False, "message": " ".join(messages)})
+            raise DjangoValidationError(" ".join(messages))
 
 
-    def perform_destroy(self, instance):
-        # 1. ممنوع لو المستخدم مش صاحب الطلب
-        if instance.user != self.request.user:
-            raise ValidationError({"success": False, "message": "لا تملك صلاحية حذف هذا الطلب."})
-
-        # 2. ممنوع لو الفترة مقفولة
-        today = timezone.localdate()
-        if not (instance.period.start_date <= today <= instance.period.end_date and instance.period.is_active):
-            raise ValidationError({"success": False, "message": "لا يمكن حذف طلب السلفة لأن الفترة مغلقة."})
-
-        # 3. الحذف
-        instance.delete()
 #--------------------------------------------------------------
 class AdvanceEligibilityView(APIView):
     permission_classes = [IsAuthenticated]
@@ -706,7 +697,8 @@ class AdvanceEligibilityView(APIView):
         eligible = bool(base > 0 and active_period)
 
         return Response({
+            "success": True,
             "eligible": eligible,
             "min_amount": float(min_val) if min_val else None,
             "max_amount": float(max_val) if max_val else None
-        })
+        }, status=200)
