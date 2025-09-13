@@ -1,0 +1,493 @@
+{% extends "base.html" %}
+{% block title %}إدارة القروض{% endblock %}
+{% block content %}
+
+<style>
+  :root{
+    --bg:#ffffff;          /* أبيض للخلفية */
+    --card:#f9f9f9;        /* رمادي فاتح للكروت */
+    --muted:#6b7280;       /* رمادي للنصوص الثانوية */
+    --text:#111111;        /* أسود للنصوص */
+    --primary:#22c55e;
+    --primary-600:#16a34a;
+    --warn:#f59e0b;
+    --danger:#ef4444;
+    --ring:#22c55e33;
+    --stripe:#f1f1f1;      /* صفوف فاتحة متبادلة */
+    --badge:#e0e0e0;
+  }
+  body{background:var(--bg);color:var(--text)}
+  .page{max-width:None;margin-inline:auto;padding:16px,width: 100%}
+  .page-header{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px
+  }
+  .title h2{margin:0;font-size:28px}
+  .subtitle{margin:6px 0 0;color:var(--muted)}
+  .actions{display:flex;gap:8px;flex-wrap:wrap}
+  .btn{
+    background:#3b82f6;color:#ffffff;border:1px solid #2563eb;
+    padding:10px 14px;border-radius:10px;text-decoration:none;display:inline-flex;align-items:center;gap:8px
+  }
+  .btn.primary{background:var(--primary);border-color:var(--primary)}
+  .btn.primary:hover{background:var(--primary-600)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+
+  .card{background:var(--card);border:1px solid #dddddd;border-radius:14px;padding:14px}
+  .filters{margin-bottom:12px}
+  .filters-grid{
+    display:grid;grid-template-columns:repeat(6, minmax(0,1fr));
+    gap:10px
+  }
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{color:var(--muted);font-size:13px}
+  select,input[type=text]{width:100%;padding:10px;border-radius:10px;border:1px solid #bbbbbb;background:#ffffff;color:#111111}
+
+  /* Placeholders */
+  input::placeholder{color:#6b7280}
+
+  .toolbar-actions{display:flex;align-items:end;gap:8px}
+  .toolbar-actions .btn{height:40px;display: inline-flex;align-items: center;justify-content: center;white-space: nowrap}
+
+  .cols-card{margin:12px 0;padding:10px}
+  .cols-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .cols-controls .chip{
+    display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid #bbbbbb;border-radius:999px;background:#ffffff
+  }
+
+  .table-wrap{overflow:auto}
+  table{width:100%;border-collapse:separate;border-spacing:0;min-width:900px}
+  thead th{
+    position:sticky;top:0;background:#f1f5f9;z-index:1;
+    text-align:center;padding:12px;border-bottom:1px solid #cccccc;user-select:none;white-space:nowrap
+  }
+  tbody td{padding:10px;text-align:center;border-bottom:1px solid #dddddd;white-space:nowrap}
+  tbody tr:nth-child(odd){background:var(--stripe)}
+  tbody tr:hover{background:#f8f9fa}
+  th.sortable{cursor:pointer}
+  th.sortable::after{content:"↕";margin-inline-start:6px;opacity:.5;font-size:12px}
+  th.drag{cursor:grab}
+  th.drag:active{cursor:grabbing}
+
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:var(--badge);border:1px solid #bbbbbb;font-size:12px}
+  .badge.success{background:#072914;border-color:#0a5b2a;color:#a7f3d0}
+  .badge.warn{background:#2a1f07;border-color:#8a5a0a;color:#fde68a}
+  .badge.ok{background:#0f2a19;border-color:#1c7d4c;color:#bbf7d0}
+
+  .collect-cell form{display:flex;align-items:center;gap:8px;justify-content:center}
+  .collect-cell input[type=number]{width:140px;padding:9px 10px;border-radius:10px;border:1px solid #bbbbbb;background:#ffffff;color:#111111}
+  .collect-cell .tag{margin-inline-start:6px}
+
+  .legend{display:flex;gap:12px;color:var(--muted);font-size:13px;margin-top:6px}
+  .legend .dot{width:10px;height:10px;border-radius:3px;display:inline-block;background:var(--stripe);border:1px solid #dddddd;margin-inline-end:6px}
+
+  /* إخفاء الأعمدة ديناميكياً */
+  .hide-col{display:none}
+
+  /* Responsive */
+  @media (max-width: 1024px){
+    .filters-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .toolbar-actions{flex-wrap:wrap}
+  }
+</style>
+
+<div class="page">
+
+  <div class="page-header">
+    <div class="title">
+      <h2>إدارة القروض</h2>
+  <!--<p class="subtitle">تحكم كامل في القروض مع فلترة سريعة وعرض أنيق</p>-->
+      </div>
+    <div class="actions">
+    <!--    <a class="btn" href="{% url 'loans:export_loans_xlsx' %}?status={{status}}&repayment={{repayment}}&btype={{btype}}&nid={{nid}}">⬇ تصدير Excel</a>
+  -->  </div>
+  </div>
+  <div class="card filters">
+    <form method="get" class="filters-grid" action="">
+      <div class="field">
+        <label>حالة القرض</label>
+        <select name="status">
+          <option value="">الكل</option>
+          <option value="active"  {% if status == 'active' %}selected{% endif %}>مستمر</option>
+          <option value="closed"  {% if status == 'closed' %}selected{% endif %}>مكتمل</option>
+          <option value="bad_debt" {% if status == 'bad_debt' %}selected{% endif %}>ديون معدومة</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>نوع السداد</label>
+        <select name="repayment">
+          <option value="">الكل</option>
+          <option value="monthly" {% if repayment == 'monthly' %}selected{% endif %}>أقساط شهرية</option>
+          <option value="oneoff"  {% if repayment == 'oneoff' %}selected{% endif %}>دفعة واحدة</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>نوع المقترض</label>
+        <select name="btype">
+          <option value="">الكل</option>
+          <option value="employee" {% if btype == 'employee' %}selected{% endif %}>ضمن الموظفين</option>
+          <option value="external" {% if btype == 'external' %}selected{% endif %}>خارج الموظفين</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>الرقم القومي</label>
+        <input type="text" name="nid" value="{{ nid }}" placeholder="اكتب الرقم القومي">
+      </div>
+      <div class="toolbar-actions">
+        <button class="btn primary" type="submit">تطبيق الفلاتر</button>
+        <a class="btn" href="{% url 'loans:inquiry' %}">استعلام سريع</a>
+        <a class="btn" href="{% url 'loans:export_loans_xlsx' %}?status={{status}}&repayment={{repayment}}&btype={{btype}}&nid={{nid}}">⬇ تصدير Excel</a>
+      </div>
+    </form>
+    <div class="legend"><span class="dot"></span>تمييز صفوف بالتبادل لسهولة القراءة</div>
+  </div>
+
+  <!-- التحكم بالأعمدة -->
+  <div class="card cols-card">
+    <div class="cols-controls" id="colsControls">
+      <!-- يتولد ديناميكيًا من عناوين الجدول -->
+      <span class="chip"><strong>الأعمدة:</strong></span>
+      <button id="saveDefaultCols" class="btn" type="button">حفظ كإعداد افتراضي</button>
+      <small style="color:var(--muted)">اسحب عناوين الأعمدة لإعادة الترتيب • اضغط للفرز</small>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table id="loansTable">
+      <thead>
+        <tr id="theadRow">
+          <!-- ضع data-key فريد لكل عمود ليستعمله التخزين وإعادة الترتيب -->
+          <th class="drag sortable" data-key="full_name"      data-type="text">الاسم رباعي</th>
+          <th class="drag sortable" data-key="address"        data-type="text">العنوان</th>
+          <th class="drag sortable" data-key="nid"            data-type="text">الرقم القومي</th>
+          <th class="drag sortable" data-key="phone"          data-type="text">رقم التليفون</th>
+          <th class="drag sortable" data-key="amount"         data-type="number">قيمة القرض</th>
+          <th class="drag sortable" data-key="status"         data-type="text">الحالة</th>
+          <th class="drag sortable" data-key="repayment"      data-type="text">نوع السداد</th>
+          <th class="drag sortable" data-key="loan_number"    data-type="text">رقم القرض</th>
+          <th class="drag sortable" data-key="received_at"    data-type="date">تاريخ الاستلام</th>
+          <th class="drag sortable" data-key="btype"          data-type="text">نوع المقترض</th>
+          <th class="drag sortable" data-key="paid"           data-type="number">إجمالي المسدد</th>
+          <th class="drag sortable" data-key="remaining"      data-type="number">إجمالي المتبقي</th>
+          <th class="drag sortable" data-key="last_collect"   data-type="date">آخر تحصيل</th>
+          <th class="drag sortable" data-key="last_collect_amt" data-type="number">آخر مبلغ تحصيل</th>
+<th class="drag sortable" data-key="maturity_date"  data-type="date">تاريخ الاستحقاق</th>
+          <th class="drag sortable" data-key="monthly"        data-type="number">القسط الشهري</th>
+          <th class="drag"          data-key="actions">عمليات</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyRows">
+        {% for loan in loans %}
+        <tr data-loan="{{ loan.loan_number }}" data-status="{{ loan.status }}">
+          <td data-key="full_name">{{ loan.borrower.full_name }}</td>
+          <td data-key="address">{{ loan.borrower.address }}</td>
+          <td data-key="nid">{{ loan.borrower.national_id }}</td>
+          <td data-key="phone">{{ loan.borrower.phone }}</td>
+          <td data-key="amount">{{ loan.amount|default:0 }}</td>
+          <td data-key="status">
+            {% if loan.status == 'active' %}<span class="badge success">مستمر</span>
+            {% elif loan.status == 'closed' %}<span class="badge">مكتمل</span>
+            {% else %}<span class="badge warn">ديون معدومة</span>{% endif %}
+          </td>
+          <td data-key="repayment">{% if loan.repayment_type == 'monthly' %}أقساط شهرية{% else %}دفعة واحدة{% endif %}</td>
+          <td data-key="loan_number">{{ loan.loan_number }}</td>
+          <td data-key="received_at">{{ loan.received_at|date:"Y-m-d" }}</td>
+          <td data-key="btype">{% if loan.borrower.borrower_type == 'employee' %}ضمن الموظفين{% else %}خارج الموظفين{% endif %}</td>
+          <td data-key="paid">{{ loan.total_paid|default:0 }}</td>
+          <td data-key="remaining">{{ loan.total_remaining|default:0 }}</td>
+          <td data-key="last_collect">{{ loan.last_collection_at|date:"Y-m-d" }}</td>
+          <td data-key="last_collect_amt">{{ loan.last_collect_amount|default:0 }}</td>
+          <td data-key="maturity_date">{{ loan.maturity_date }}</td>
+          <td data-key="monthly">{{ loan.monthly_installment|default:0 }}</td>
+          <td data-key="actions" class="collect-cell">
+            <form method="post" action="{% url 'loans:collect_payment' loan.loan_number %}" class="collect-form">
+              {% csrf_token %}
+              <input type="number" step="0.01" name="amount" value="{{ loan.monthly_installment|default:loan.total_remaining }}">
+              <button class="btn" type="submit" {% if loan.status == 'closed' %}disabled title="القرض مكتمل"{% endif %}>تحصيل</button>
+              <span class="tag badge ok" style="display:none;">✔ تم التحصيل</span>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="16" class="muted">لا توجد بيانات.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  // ============== أدوات عامة ==============
+  const $ = (sel, ctx=document)=>ctx.querySelector(sel);
+  const $$ = (sel, ctx=document)=>Array.from(ctx.querySelectorAll(sel));
+
+  // حفظ/قراءة من localStorage
+  const store = {
+    get(k, def){ try{ return JSON.parse(localStorage.getItem(k) ?? "null") ?? def }catch{ return def } },
+    set(k, v){ localStorage.setItem(k, JSON.stringify(v)) }
+  };
+
+  // قراءة CSRF من الكوكيز
+  function getCookie(name){
+    const m = document.cookie.match(new RegExp('(^| )'+name+'=([^;]+)'));
+    return m ? decodeURIComponent(m[2]) : null;
+  }
+
+  // ============== التحكم بالأعمدة (إظهار/إخفاء + ترتيب) ==============
+  const theadRow = $('#theadRow');
+  const table    = $('#loansTable');
+  const tbody    = $('#tbodyRows');
+  const ctrlBox  = $('#colsControls');
+
+  // بناء لائحة الأعمدة + تشيك بوكس
+  function buildColsControls(){
+    // احفظ خريطة الأعمدة بالترتيب الحالي
+    const heads = $$('#theadRow th');
+    const config = heads.map((th, idx)=>({key: th.dataset.key, index: idx, text: th.textContent.trim()}));
+    const savedOrder = store.get('loans.cols.order', config.map(c=>c.key));
+    const savedHidden = new Set(store.get('loans.cols.hidden', []));
+
+    // أعد ترتيب الـ th حسب savedOrder
+    savedOrder.forEach((key, newIdx)=>{
+      const th = $(`#theadRow th[data-key="${key}"]`);
+      if(th) theadRow.appendChild(th);
+    });
+    // أعد ترتيب كل صف بنفس ترتيب الهيدر
+    $$('#tbodyRows tr').forEach(tr=>{
+      savedOrder.forEach((key)=>{
+        const td = tr.querySelector(`[data-key="${key}"]`);
+        if(td) tr.appendChild(td);
+      });
+    });
+
+    // أخف الأعمدة المحفوظة
+    savedHidden.forEach(key=>{
+      hideShowColumn(key, true);
+    });
+
+    // أنشئ التشيك بوكس
+    const frag = document.createDocumentFragment();
+    config.forEach(c=>{
+      const wrap = document.createElement('label');
+      wrap.className = 'chip';
+      wrap.draggable = false;
+
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.checked = !savedHidden.has(c.key);
+      input.dataset.key = c.key;
+
+      const txt = document.createElement('span');
+      txt.textContent = c.text;
+
+      wrap.appendChild(input);
+      wrap.appendChild(txt);
+      frag.appendChild(wrap);
+
+      input.addEventListener('change', e=>{
+        hideShowColumn(c.key, !e.target.checked);
+        // احفظ
+        const hidden = new Set(store.get('loans.cols.hidden', []));
+        if(!e.target.checked) hidden.add(c.key); else hidden.delete(c.key);
+        store.set('loans.cols.hidden', Array.from(hidden));
+      });
+    });
+    ctrlBox.insertBefore(frag, $('#saveDefaultCols'));
+
+    // سحب وإفلات للهيدر
+    enableDragReorder();
+  }
+
+  function hideShowColumn(key, hide){
+    const th = $(`#theadRow th[data-key="${key}"]`);
+    const colIndex = Array.from(theadRow.children).indexOf(th);
+    if(colIndex < 0) return;
+    if(hide) th.classList.add('hide-col'); else th.classList.remove('hide-col');
+    $$('#tbodyRows tr').forEach(tr=>{
+      const td = tr.children[colIndex];
+      if(td) hide ? td.classList.add('hide-col') : td.classList.remove('hide-col');
+    });
+  }
+
+  function enableDragReorder(){
+    let dragTh = null;
+    $$('#theadRow th').forEach(th=>{
+      th.addEventListener('dragstart', e=>{
+        dragTh = th; th.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      th.addEventListener('dragend', ()=>{
+        if(dragTh){ dragTh.classList.remove('dragging'); dragTh = null; saveOrder(); }
+      });
+      th.addEventListener('dragover', e=>{
+        e.preventDefault();
+        const after = getAfterElement(theadRow, e.clientX);
+        if(after == null) theadRow.appendChild(dragTh);
+        else theadRow.insertBefore(dragTh, after);
+      });
+    });
+    // اجعل كل th قابل للسحب
+    $$('#theadRow th').forEach(th=>th.setAttribute('draggable','true'));
+
+    function getAfterElement(container, x){
+      const els = [...container.querySelectorAll('th:not(.dragging)')];
+      return els.reduce((closest, child)=>{
+        const box = child.getBoundingClientRect();
+        const offset = x - box.left - box.width/2;
+        if(offset < 0 && offset > closest.offset) return {offset, element:child};
+        else return closest;
+      }, {offset: Number.NEGATIVE_INFINITY}).element;
+    }
+  }
+
+  function saveOrder(){
+    const order = $$('#theadRow th').map(th=>th.dataset.key);
+    store.set('loans.cols.order', order);
+
+    // طبّق نفس الترتيب على كل صف
+    $$('#tbodyRows tr').forEach(tr=>{
+      order.forEach(key=>{
+        const td = tr.querySelector(`[data-key="${key}"]`);
+        if(td) tr.appendChild(td);
+      });
+    });
+  }
+
+  $('#saveDefaultCols').addEventListener('click', ()=>{
+    // فعليًا محفوظ تلقائيًا، فهنعرض نغزة صغيرة
+    const btn = $('#saveDefaultCols');
+    const old = btn.textContent;
+    btn.textContent = '✔ تم الحفظ كافتراضي';
+    setTimeout(()=>btn.textContent = old, 1500);
+  });
+
+  // ============== فرز بالضغط على الهيدر ==============
+  let sortState = { key:null, dir:1 };
+  $$('#theadRow th.sortable').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const key = th.dataset.key;
+      const type = th.dataset.type || 'text';
+      sortState.dir = sortState.key === key ? -sortState.dir : 1;
+      sortState.key = key;
+
+      const rows = $$('#tbodyRows tr');
+      const sorted = rows.sort((a,b)=>{
+        const av = (a.querySelector(`[data-key="${key}"]`)?.textContent || '').trim();
+        const bv = (b.querySelector(`[data-key="${key}"]`)?.textContent || '').trim();
+        return compare(av, bv, type) * sortState.dir;
+      });
+      sorted.forEach(r=>tbody.appendChild(r));
+    });
+  });
+
+  function compare(a,b,type){
+    if(type==='number'){ return (parseFloat(a)||0) - (parseFloat(b)||0); }
+    if(type==='date'){ return (new Date(a) - new Date(b)); }
+    return a.localeCompare(b, 'ar');
+  }
+
+  // ============== تحصيل بدون ريلود + Tag 3 أيام ==============
+  const CSRF = getCookie('csrftoken');
+  // استرجاع التحصيلات المخزنة: { loanNumber: timestamp }
+  const collected = store.get('loans.collected.tags', {});
+  const THREE_DAYS = 3*24*60*60*1000;
+  const now = Date.now();
+
+  // نظّف القديم وأظهر الحالي
+  Object.keys(collected).forEach(ln=>{
+    if(now - collected[ln] > THREE_DAYS) delete collected[ln];
+  });
+  store.set('loans.collected.tags', collected);
+
+  // إظهار التاج للصفوف اللي اتحصلت قريب
+  Object.keys(collected).forEach(ln=>{
+    const row = $(`tr[data-loan="${ln}"]`);
+    const tag = row?.querySelector('.collect-cell .tag');
+    if(tag) tag.style.display = 'inline-flex';
+  });
+
+  // عرّف سلوك التحصيل عبر fetch
+  $$('.collect-form').forEach(form=>{
+    form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const row = form.closest('tr');
+      const loanNumber = row.dataset.loan;
+      const status = row.dataset.status;
+
+      // لو القرض مكتمل، منع التحصيل (زيادة أمان في الـ Front)
+      if(status === 'closed') return;
+
+      const amountInput = form.querySelector('input[name="amount"]');
+      const amount = parseFloat(amountInput.value||0) || 0;
+      const remCell  = row.querySelector('[data-key="remaining"]');
+      const remaining = parseFloat(remCell?.textContent || 0);
+
+      // لو المبلغ غير صالح أو أكبر من المتبقي → امنع التحصيل وخفي علامة ✔
+      if(amount <= 0 || amount > remaining){
+        const tag = form.querySelector('.tag');
+        if(tag){
+          tag.textContent = "❌ لم يتم التحصيل";
+          tag.classList.remove("ok");    // لو فيه كلاس نجاح
+          tag.classList.add("warn");     // تخليها بلون تحذير (أنت عندك كلاس warn جاهز)
+          tag.style.display = 'inline-flex';
+        }
+        return;
+      }
+
+
+      // POST باستخدام fetch
+      try{
+        const res = await fetch(form.action, {
+          method: 'POST',
+          headers: {'X-CSRFToken': CSRF, 'X-Requested-With':'XMLHttpRequest'},
+          body: new FormData(form),
+          redirect: 'manual'
+        });
+        // تحديث واجهة الاستخدام تفاؤليًا:
+        const paidCell = row.querySelector('[data-key="paid"]');
+        const remCell  = row.querySelector('[data-key="remaining"]');
+        const lastCell = row.querySelector('[data-key="last_collect"]');
+        const paid = (parseFloat(paidCell.textContent)||0) + amount;
+        const rem  = Math.max(0, (parseFloat(remCell.textContent)||0) - amount);
+        paidCell.textContent = paid.toFixed(2);
+        remCell.textContent  = rem.toFixed(2);
+        lastCell.textContent = new Date().toISOString().slice(0,10);
+
+        // أظهر Tag التحصيل واحفظه 3 أيامسس
+        const tag = form.querySelector('.tag');
+        if(tag){
+          tag.textContent = "✔ تم التحصيل";
+          tag.classList.remove("warn");
+          tag.classList.add("ok");
+          tag.style.display = 'inline-flex';
+        }
+        collected[loanNumber] = Date.now();
+        store.set('loans.collected.tags', collected);
+
+        collected[loanNumber] = Date.now();
+        store.set('loans.collected.tags', collected);
+
+        // لو بقيمة 0 المتبقي صار 0؛ اعملها "مكتمل" ودisable الزر
+        if(rem === 0){
+          const statusCell = row.querySelector('[data-key="status"]');
+          statusCell.innerHTML = '<span class="badge">مكتمل</span>';
+          row.dataset.status = 'closed';
+          form.querySelector('button[type="submit"]').disabled = true;
+        }
+      }catch(err){
+        console.error(err);
+      }
+    });
+  });
+
+  // تعطيل أزرار التحصيل عند التحميل لو الحالة closed (دعم إضافي)
+  $$('tr[data-status="closed"] .collect-form button[type="submit"]').forEach(b=>b.disabled = true);
+
+  // جهّز الكونترولز وابني كل شيء
+  buildColsControls();
+
+})();
+</script>
+
+{% endblock %}

@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+  <h3>السلف</h3>
+
+  {% if not can_request %}
+    <div class="alert alert-warning" style="margin-bottom:10px;">{{ reason }}</div>
+  {% endif %}
+
+  <form id="adv-form" action="{% url 'submit-advance' %}" method="post">
+    {% csrf_token %}
+
+    {{ form.as_p }}
+
+    <button type="submit" class="btn btn-primary"
+      {% if not can_request %}disabled title="{{ reason }}"{% endif %}>
+      إرسال الطلب
+    </button>
+
+    <!-- Progress بسيط لإرسال الطلب -->
+    <div id="adv-progress" style="display:none; margin-top:8px;">
+      <div style="height:8px;background:#e9ecef;">
+        <div id="adv-bar" style="width:0%;height:8px;background:#28a745;"></div>
+      </div>
+      <small id="adv-txt">0%</small>
+    </div>
+
+    <!-- مكان رسالة الاستجابة -->
+    <div id="adv-msg" style="margin-top:10px;"></div>
+  </form>
+
+  <hr>
+  <h5>حالة السلفة الأولى الحالية:</h5>
+  {% if first_latest %}
+    <div id="first-summary">
+      <p>
+        المبلغ: {{ first_latest.amount }}
+        — الحالة: {{ first_latest.get_status_display }}
+        {% if first_latest.locked %} (عرض فقط){% endif %}
+        {% if first_latest.status == 'UNDER_REVIEW' and not first_latest.locked %}
+          <button type="button" class="btn btn-sm btn-outline-primary" onclick="toggleEdit('FIRST', true)">تعديل</button>
+        {% endif %}
+      </p>
+    </div>
+
+    {% if first_latest.status == 'UNDER_REVIEW' and not first_latest.locked %}
+    <form id="first-edit" class="row g-2" style="display:none;" onsubmit="return saveAdvance(event,'FIRST')">
+      <input type="hidden" name="advance_type" value="FIRST">
+      <div class="col-md-3">
+        <input name="amount" type="number" step="0.01" class="form-control" value="{{ first_latest.amount }}" required>
+      </div>
+      <div class="col-md-5">
+        <input name="notes" type="text" class="form-control" value="{{ first_latest.notes|default:'' }}">
+      </div>
+      <div class="col-md-4 d-flex gap-2">
+        <button class="btn btn-success">حفظ</button>
+        <button type="button" class="btn btn-light" onclick="toggleEdit('FIRST', false)">إلغاء</button>
+      </div>
+    </form>
+    {% endif %}
+  {% else %}
+    <p>لا يوجد طلب.</p>
+  {% endif %}
+
+  <h5>حالة السلفة الثانية الحالية:</h5>
+  {% if second_latest %}
+    <div id="second-summary">
+      <p>
+        المبلغ: {{ second_latest.amount }}
+        — الحالة: {{ second_latest.get_status_display }}
+        {% if second_latest.locked %} (عرض فقط){% endif %}
+        {% if second_latest.status == 'UNDER_REVIEW' and not second_latest.locked %}
+          <button type="button" class="btn btn-sm btn-outline-primary" onclick="toggleEdit('SECOND', true)">تعديل</button>
+        {% endif %}
+      </p>
+    </div>
+
+    {% if second_latest.status == 'UNDER_REVIEW' and not second_latest.locked %}
+    <form id="second-edit" class="row g-2" style="display:none;" onsubmit="return saveAdvance(event,'SECOND')">
+      <input type="hidden" name="advance_type" value="SECOND">
+      <div class="col-md-3">
+        <input name="amount" type="number" step="0.01" class="form-control" value="{{ second_latest.amount }}" required>
+      </div>
+      <div class="col-md-5">
+        <input name="notes" type="text" class="form-control" value="{{ second_latest.notes|default:'' }}">
+      </div>
+      <div class="col-md-4 d-flex gap-2">
+        <button class="btn btn-success">حفظ</button>
+        <button type="button" class="btn btn-light" onclick="toggleEdit('SECOND', false)">إلغاء</button>
+      </div>
+    </form>
+    {% endif %}
+  {% else %}
+    <p>لا يوجد طلب.</p>
+  {% endif %}
+
+  <hr>
+  <h5>كل طلباتك</h5>
+  <table class="table table-bordered">
+    <thead>
+      <tr><th>النوع</th><th>المبلغ</th><th>الحالة</th><th>الفترة</th><th>التاريخ</th></tr>
+    </thead>
+    <tbody>
+    {% for r in user_reqs %}
+      <tr>
+        <td>{{ r.get_advance_type_display }}</td>
+        <td>{{ r.amount }}</td>
+        <td>{{ r.get_status_display }}</td>
+        <td>{{ r.period.start_date }} → {{ r.period.end_date }}</td>
+        <td>{{ r.created_at }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5" class="text-center">لا يوجد طلبات</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+  // ضبط اختيارات النوع بحيث يظهر المسموح فقط
+  (function limitAdvanceTypeOptions(){
+    // بنفترض اسم الحقل advance_type (من الفورم)
+    const sel = document.querySelector('select[name="advance_type"]');
+    if (!sel) return;
+
+    const canFirst  = {{ can_first|yesno:"true,false" }};
+    const canSecond = {{ can_second|yesno:"true,false" }};
+
+    // امسح أي option مش مسموح
+    [...sel.options].forEach(op => {
+      if (op.value === 'FIRST' && !canFirst)  op.remove();
+      if (op.value === 'SECOND' && !canSecond) op.remove();
+    });
+
+    // لو مافيش ولا اختيار.. عطّل كل حقول الإدخال مع الإبقاء على CSRF
+    const form = document.getElementById('adv-form');
+    if (sel.options.length === 0) {
+      [...form.elements].forEach(el => {
+        if (el.name !== 'csrfmiddlewaretoken') el.disabled = true;
+      });
+    }
+  })();
+
+  // إرسال AJAX خفيف + progress (submit-advance بترجع JSON)
+  const f = document.getElementById('adv-form');
+  const wrap = document.getElementById('adv-progress');
+  const bar  = document.getElementById('adv-bar');
+  const txt  = document.getElementById('adv-txt');
+  const msg  = document.getElementById('adv-msg');
+
+  f.addEventListener('submit', function(e){
+    e.preventDefault();
+    msg.innerHTML = '';
+    wrap.style.display = 'block';
+    bar.style.width = '25%'; txt.textContent = '25%';
+
+    const formData = new FormData(f);
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', f.action, true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+    const csrf = f.querySelector('input[name=csrfmiddlewaretoken]');
+    if (csrf) xhr.setRequestHeader('X-CSRFToken', csrf.value);
+
+    xhr.upload.onprogress = function(e){
+      if (e.lengthComputable){
+        const p = Math.round((e.loaded/e.total)*100);
+        const w = Math.max(25, p);
+        bar.style.width = w + '%';
+        txt.textContent = w + '%';
+      }
+    };
+
+    xhr.onload = function(){
+      bar.style.width = '100%'; txt.textContent = '100%';
+      try {
+        const data = JSON.parse(xhr.responseText || '{}');
+        if (data.ok) {
+          msg.innerHTML = '<div class="alert" style="margin-top:8px;"><i class="fas fa-check-circle"></i> تم حفظ الطلب بنجاح.</div>';
+          setTimeout(()=> window.location.reload(), 600);
+        } else {
+          msg.innerHTML = '<div class="alert" style="margin-top:8px;"><i class="fas fa-exclamation-triangle"></i> ' + (data.msg || 'تعذّر حفظ الطلب') + '</div>';
+        }
+      } catch (_) {
+        msg.innerHTML = '<div class="alert" style="margin-top:8px;"><i class="fas fa-exclamation-triangle"></i> استجابة غير متوقعة.</div>';
+      }
+    };
+
+    xhr.onerror = function(){
+      msg.innerHTML = '<div class="alert" style="margin-top:8px;"><i class="fas fa-exclamation-triangle"></i> خطأ بالاتصال.</div>';
+    };
+
+    xhr.send(formData);
+  });
+</script>
+<script>
+  // إظهار/إخفاء فورم التعديل
+  function toggleEdit(which, show) {
+    const sum  = document.getElementById(which === 'FIRST' ? 'first-summary'  : 'second-summary');
+    const edit = document.getElementById(which === 'FIRST' ? 'first-edit'     : 'second-edit');
+    if (!sum || !edit) return;
+    sum.style.display  = show ? 'none' : 'block';
+    edit.style.display = show ? 'flex' : 'none';
+  }
+
+  // حفظ تعديل السُلفة (لما تكون UNDER_REVIEW)
+  function saveAdvance(e, which) {
+    e.preventDefault();
+
+    const editForm = document.getElementById(which === 'FIRST' ? 'first-edit' : 'second-edit');
+    const amountEl = editForm.querySelector('[name="amount"]');
+    const notesEl  = editForm.querySelector('[name="notes"]');
+
+    const amount = amountEl ? amountEl.value : '';
+    const notes  = notesEl  ? notesEl.value  : '';
+
+    // نستخدم نفس URL بتاع إنشاء الطلب
+    const submitUrl = "{% url 'submit-advance' %}";
+    const csrf = document.querySelector('#adv-form input[name="csrfmiddlewaretoken"]');
+
+    const fd = new FormData();
+    fd.append('advance_type', which);   // 'FIRST' أو 'SECOND'
+    fd.append('amount', amount);
+    fd.append('notes', notes || '');
+
+    // تعطيل زر الحفظ مؤقتًا
+    const saveBtn = editForm.querySelector('button.btn.btn-success');
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'جارٍ الحفظ...'; }
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', submitUrl, true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    if (csrf) xhr.setRequestHeader('X-CSRFToken', csrf.value);
+
+    xhr.onload = function(){
+      try {
+        const data = JSON.parse(xhr.responseText || '{}');
+        if (data.ok) {
+          // نجاح → حدّث الصفحة لتحديث الحالة والمبلغ
+          window.location.reload();
+        } else {
+          alert(data.msg || 'تعذّر حفظ التعديل');
+        }
+      } catch (_) {
+        alert('استجابة غير متوقعة أثناء الحفظ.');
+      } finally {
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'حفظ'; }
+      }
+    };
+
+    xhr.onerror = function(){
+      alert('خطأ بالاتصال.');
+      if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'حفظ'; }
+    };
+
+    xhr.send(fd);
+  }
+</script>
+{% endblock %}

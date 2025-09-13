@@ -1,0 +1,91 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}Salaries System{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    /* Modern Admin Navbar Additions */
+    .custom-nav-container {
+        display: flex;
+        align-items: center;
+        margin-left: auto;
+    }
+
+    .website-nav-links {
+        display: flex;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        height: 100%;
+    }
+
+    .website-nav-links li {
+        position: relative;
+        margin: 0 5px;
+    }
+
+    .website-nav-links a {
+        color: var(--header-link-color);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        padding: 0 15px;
+        height: 59px;
+        /* Match admin header height */
+        font-size: 13px;
+        font-weight: 500;
+        transition: all 0.2s;
+        border-bottom: 3px solid transparent;
+    }
+
+    .website-nav-links a:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-bottom-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .website-nav-links a.active {
+        border-bottom-color: #fff;
+    }
+
+    .website-nav-links i {
+        margin-left: 8px;
+        font-size: 14px;
+    }
+
+    /* Make space for user tools */
+    #user-tools {
+        margin-right: 20px;
+    }
+
+    /* Header title customization */
+    #branding h1 {
+        font-weight: 600;
+    }
+
+    #branding h1 a::before {
+        content: "Salaries System";
+        margin-right: 10px;
+    }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">
+        {% if site_header|default:_('Django administration') == 'Django administration' %}
+        {% else %}
+        {{ site_header }}
+        {% endif %}
+    </a>
+</h1>
+{% endblock %}
+
+{% block nav-global %}
+<a href="/">
+    <i class="fas fa-home"></i> Home
+</a>
+< {% endblock %}

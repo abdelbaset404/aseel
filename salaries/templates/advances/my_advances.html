@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+{% load tz %}
+{% block content %}
+<div class="container">
+
+  <style>
+    .page-wrap{ max-width:1080px; margin:0 auto; }
+    .page-title{ display:flex;align-items:center;gap:.6rem;margin:.5rem 0 1rem; font-size:1.25rem;font-weight:700; }
+    .page-title i{ color:#198754; }
+    .grid{ display:grid;gap:16px; grid-template-columns:420px 1fr; }
+    @media (max-width: 992px){ .grid{ grid-template-columns:1fr; } }
+    .card{ background:#fff;border:1px solid #e9ecef;border-radius:.6rem; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,.03); }
+    .card-title{ font-weight:700;margin:0 0 8px;font-size:1rem; display:flex;align-items:center;gap:.5rem; }
+    .form-compact .form-label{ font-size:.85rem;margin-bottom:.25rem;color:#495057;font-weight:600; }
+    .form-compact .form-control,.form-compact .form-select{ padding:.35rem .55rem;font-size:.9rem;border-radius:.45rem; }
+    .form-compact .btn-submit{ padding:.45rem 1rem;font-size:.95rem;font-weight:700;border-radius:.45rem; }
+    .muted-note{ font-size:.8rem;color:#6c757d; }
+    .alert-soft{ border-radius:.45rem;padding:.6rem .75rem;margin:.5rem 0 0; color:#664d03;background:#fff3cd;border:1px solid #ffe69c;font-size:.9rem; }
+    .alert-ok{ border-radius:.45rem;padding:.6rem .75rem;margin:.5rem 0; color:#0f5132;background:#d1e7dd;border:1px solid #badbcc;font-size:.9rem; }
+    .alert-err{ border-radius:.45rem;padding:.6rem .75rem;margin:.5rem 0; color:#842029;background:#f8d7da;border:1px solid #f5c2c7;font-size:.9rem; }
+    .mini{ display:grid;gap:12px;grid-template-columns:1fr 1fr; }
+    @media (max-width: 768px){ .mini{ grid-template-columns:1fr; } }
+    .kv{ display:flex;justify-content:space-between;gap:8px;margin:.25rem 0; }
+    .kv strong{ color:#212529; }
+    .badge-soft{ padding:.3rem .55rem;border-radius:.5rem;font-size:.82rem;font-weight:700;display:inline-block; }
+    .badge-status-UNDER_REVIEW{ color:#aa6500;background:#fff3cd; }
+    .badge-status-APPROVED{ color:#0f5132;background:#d1e7dd; }
+    .badge-status-REJECTED{ color:#842029;background:#f8d7da; }
+    .table-wrap{ margin-top:14px; }
+    table.table{ border-color:#e9ecef;font-size:.9rem; }
+    .table thead th{ background:#f9fbfd;font-weight:700;white-space:nowrap; border-top-color:#e9ecef;border-bottom-color:#e9eceف; }
+    .table td, .table th{ vertical-align:middle; padding:.45rem .55rem; }
+    .table caption{ caption-side:top; font-weight:700; padding:.25rem 0; color:#495057; }
+    .btn-soft{ padding:.45rem 1rem;font-size:.92rem;font-weight:700;border-radius:.45rem; }
+    .btn-primary-soft{ color:#0d6efd;background:#e9f1ff;border:1px solid #0d6efd; }
+    .btn-primary-soft:hover{ background:#dbe7ff;color:#0a58ca; }
+    .btn-line{ padding:.25rem .55rem; font-size:.82rem; border-radius:.35rem; }
+    .btn-outline-secondary{ color:#495057; background:#f8f9fa; border:1px solid #adb5bd; }
+    .btn-outline-secondary:hover{ background:#e9ecef; color:#212529; }
+    .btn-outline-danger{ color:#842029; background:#fff; border:1px solid #f5c2c7; }
+    .btn-outline-danger:hover{ background:#f8d7da; }
+  </style>
+
+  <div class="page-wrap">
+    <div class="page-title">
+      <i class="fas fa-hand-holding-usd"></i> طلب سُلفة
+    </div>
+    {% if messages %}
+      {% for m in messages %}
+        <div class="alert-err" role="alert">{{ m }}</div>
+      {% endfor %}
+    {% endif %}
+    <!-- منطقة رسائل AJAX -->
+    <div id="adv-msg"></div>
+
+    <div class="grid">
+
+      <!-- العمود الأيسر: كارت الطلب -->
+      <div class="card">
+        <div class="card-title">
+          <i class="fas fa-file-invoice-dollar" style="color:#0d6efd;"></i>
+          نموذج تقديم سُلفة
+        </div>
+
+        <!-- تنبيه خارج المواعيد -->
+        {% if not can_first and not can_second %}
+          <div class="alert-soft">الفترة الحالية خارج نافذة السماح للتقديم.</div>
+        {% endif %}
+
+        <form id="adv-form" class="form-compact" method="post" action="{% url 'submit-advance' %}">
+          {% csrf_token %}
+
+          <div class="mb-2">
+            <label class="form-label">نوع السلفة</label>
+            <select name="advance_type" class="form-select" required>
+              {% if can_first %}<option value="FIRST">السُلفة الأولى</option>{% endif %}
+              {% if can_second %}<option value="SECOND">السُلفة الثانية</option>{% endif %}
+            </select>
+            <div id="type-lock-msg" class="muted-note" style="margin-top:.25rem;"></div>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label">المبلغ</label>
+            <input id="adv-amount" type="number" step="0.01" min="1" name="amount" class="form-control" placeholder="مثال: 1500.00" required>
+            {% if amount_hint_text %}
+              <div class="muted-note" style="margin-top:.25rem;">{{ amount_hint_text }}</div>
+            {% endif %}
+          </div>
+
+          <!-- شيلنا خانة الملاحظات نهائيًا من واجهة الموظف -->
+
+          <button id="adv-submit-btn" type="submit" class="btn btn-success btn-submit"
+                  {% if not can_first and not can_second %}disabled title="خارج مواعيد السماح"{% endif %}>
+            <i class="fas fa-paper-plane"></i> إرسال الطلب
+          </button>
+
+          <div id="adv-progress" style="display:none; margin-top:8px;">
+            <div style="height:8px;background:#e9ecef;border-radius:3px;overflow:hidden;">
+              <div id="adv-bar" style="width:0%;height:8px;background:#28a745;"></div>
+            </div>
+            <small id="adv-txt">0%</small>
+          </div>
+        </form>
+      </div>
+
+      <!-- العمود الأيمن: كروت الحالة + أزرار تعديل/حذف -->
+      <div class="mini">
+
+        <!-- السلفة الأولى -->
+        <div class="card">
+          <div class="card-title"><i class="fas fa-flag"></i> السُلفة الأولى</div>
+          {% if first_latest %}
+            <div class="kv"><span>المبلغ</span> <strong id="first-amount">{{ first_latest.amount }}</strong></div>
+            <div class="kv"><span>الحالة</span>
+              <span class="badge-soft badge-status-{{ first_latest.status }}" id="first-status">{{ first_latest.get_status_display }}</span>
+            </div>
+            <div class="kv"><span>الفترة</span>
+              <span>{{ first_latest.period.start_date }} → {{ first_latest.period.end_date }}</span>
+            </div>
+
+            {% if first_latest.status == 'UNDER_REVIEW' and not first_latest.locked %}
+              <div class="d-flex gap-2" style="margin-top:.25rem;">
+                <button type="button" class="btn btn-line btn-outline-secondary" onclick="toggleEdit('first', true)">تعديل</button>
+                <form id="first-delete" method="post" action="{% url 'adv-user-delete' first_latest.id %}" style="display:inline;">
+                  {% csrf_token %}
+                  <button class="btn btn-line btn-outline-danger" type="submit">حذف</button>
+                </form>
+              </div>
+
+              <form id="first-edit" class="form-compact" method="post"
+                    action="{% url 'adv-user-edit' first_latest.id %}" style="display:none;margin-top:8px;">
+                {% csrf_token %}
+                <div class="mb-2">
+                  <label class="form-label">المبلغ</label>
+                  <input type="number" name="amount" step="0.01" min="1" class="form-control" value="{{ first_latest.amount }}" required>
+                  {% if amount_hint_text %}<div class="muted-note" style="margin-top:.25rem;">{{ amount_hint_text }}</div>{% endif %}
+                </div>
+                <!-- شيلنا خانة الملاحظات من التعديل -->
+                <div class="d-flex gap-2">
+                  <button class="btn btn-success btn-soft">حفظ</button>
+                  <button type="button" class="btn btn-light btn-soft" onclick="toggleEdit('first', false)">إلغاء</button>
+                </div>
+                <div id="first-edit-msg" class="muted-note" style="margin-top:.4rem;"></div>
+              </form>
+            {% elif first_latest.locked %}
+              <div class="muted-note">هذا الطلب مؤكد/مقفول.</div>
+            {% endif %}
+          {% else %}
+            <div class="muted-note">لا يوجد طلب حالي.</div>
+          {% endif %}
+        </div>
+
+        <!-- السلفة الثانية -->
+        <div class="card">
+          <div class="card-title"><i class="fas fa-flag-checkered"></i> السُلفة الثانية</div>
+          {% if second_latest %}
+            <div class="kv"><span>المبلغ</span> <strong id="second-amount">{{ second_latest.amount }}</strong></div>
+            <div class="kv"><span>الحالة</span>
+              <span class="badge-soft badge-status-{{ second_latest.status }}" id="second-status">{{ second_latest.get_status_display }}</span>
+            </div>
+            <div class="kv"><span>الفترة</span>
+              <span>{{ second_latest.period.start_date }} → {{ second_latest.period.end_date }}</span>
+            </div>
+
+            {% if second_latest.status == 'UNDER_REVIEW' and not second_latest.locked %}
+              <div class="d-flex gap-2" style="margin-top:.25rem;">
+                <button type="button" class="btn btn-line btn-outline-secondary" onclick="toggleEdit('second', true)">تعديل</button>
+                <form id="second-delete" method="post" action="{% url 'adv-user-delete' second_latest.id %}" style="display:inline;">
+                  {% csrf_token %}
+                  <button class="btn btn-line btn-outline-danger" type="submit">حذف</button>
+                </form>
+              </div>
+
+              <form id="second-edit" class="form-compact" method="post"
+                    action="{% url 'adv-user-edit' second_latest.id %}" style="display:none;margin-top:8px;">
+                {% csrf_token %}
+                <div class="mb-2">
+                  <label class="form-label">المبلغ</label>
+                  <input type="number" name="amount" step="0.01" min="1" class="form-control" value="{{ second_latest.amount }}" required>
+                  {% if amount_hint_text %}<div class="muted-note" style="margin-top:.25rem;">{{ amount_hint_text }}</div>{% endif %}
+                </div>
+                <!-- شيلنا خانة الملاحظات من التعديل -->
+                <div class="d-flex gap-2">
+                  <button class="btn btn-success btn-soft">حفظ</button>
+                  <button type="button" class="btn btn-light btn-soft" onclick="toggleEdit('second', false)">إلغاء</button>
+                </div>
+                <div id="second-edit-msg" class="muted-note" style="margin-top:.4rem;"></div>
+              </form>
+            {% elif second_latest.locked %}
+              <div class="muted-note">هذا الطلب مؤكد/مقفول.</div>
+            {% endif %}
+          {% else %}
+            <div class="muted-note">لا يوجد طلب حالي.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- جدول الطلبات -->
+    <div class="table-wrap card" style="margin-top:14px;">
+      <div class="card-title"><i class="fas fa-list"></i> طلباتي السابقة</div>
+      <div class="table-responsive">
+        <table class="table table-bordered table-sm">
+          <thead>
+            <tr>
+              <th>النوع</th>
+              <th>المبلغ</th>
+              <th>الحالة</th>
+              <th>الفترة</th>
+              <th>التاريخ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in user_reqs %}
+              <tr>
+                <td>{{ r.get_advance_type_display }}</td>
+                <td>{{ r.amount }}</td>
+                <td><span class="badge-soft badge-status-{{ r.status }}">{{ r.get_status_display }}</span></td>
+                <td>{{ r.period.start_date }} → {{ r.period.end_date }}</td>
+                <td>{{ r.created_at|localtime }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5" class="text-center">لا يوجد طلبات بعد</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="muted-note">* يُعرض أحدث الطلبات أولًا.</div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  function toggleEdit(which, show){
+    const frm = document.getElementById(which+'-edit');
+    if (!frm) return;
+    frm.style.display = show ? 'block' : 'none';
+  }
+
+  // قفل نموذج التقديم حسب النوع المختار لو فيه طلب قائم لنفس النوع
+  (function(){
+    const sel = document.querySelector('select[name="advance_type"]');
+    const msg = document.getElementById('type-lock-msg');
+    const amt = document.getElementById('adv-amount');
+    const btn = document.getElementById('adv-submit-btn');
+    if (!sel || !amt || !btn) return;
+
+    const hasFirst  = {{ first_has_current|yesno:"true,false" }};
+    const hasSecond = {{ second_has_current|yesno:"true,false" }};
+
+    function applyLock(){
+      const v = sel.value;
+      let locked = false;
+      let text = '';
+      if (v === 'FIRST' && hasFirst){ locked = true; text = 'لديك طلب قائم للسُلفة الأولى في الفترة الحالية — استخدم زر "تعديل" أو "حذف".'; }
+      if (v === 'SECOND' && hasSecond){ locked = true; text = 'لديك طلب قائم للسُلفة الثانية في الفترة الحالية — استخدم زر "تعديل" أو "حذف".'; }
+      amt.disabled = locked;
+      btn.disabled = locked;
+      if (msg){ msg.textContent = text; }
+    }
+    sel.addEventListener('change', applyLock);
+    applyLock();
+  })();
+
+  // إرسال فورم التقديم بـ AJAX
+  (function(){
+    const f   = document.getElementById('adv-form');
+    if (!f) return;
+    const msg = document.getElementById('adv-msg');
+    const wrap = document.getElementById('adv-progress');
+    const bar  = document.getElementById('adv-bar');
+    const txt  = document.getElementById('adv-txt');
+
+    f.addEventListener('submit', function(e){
+      e.preventDefault();
+      msg.innerHTML = '';
+      if (wrap){ wrap.style.display = 'block'; bar.style.width = '25%'; if (txt) txt.textContent = '25%'; }
+
+      const formData = new FormData(f);
+      fetch(f.action, {
+        method: 'POST',
+        headers: {'X-Requested-With':'XMLHttpRequest'},
+        body: formData
+      })
+      .then(r => r.json())
+      .then(d => {
+        if (wrap){ bar.style.width = '100%'; if (txt) txt.textContent = '100%'; }
+        if (d && d.ok){
+          msg.innerHTML = '<div class="alert-ok"><i class="fas fa-check-circle"></i> تم حفظ الطلب بنجاح.</div>';
+          setTimeout(()=> window.location.reload(), 650);
+        }else{
+          msg.innerHTML = '<div class="alert-err"><i class="fas fa-exclamation-triangle"></i> ' + (d.msg || 'تعذّر حفظ الطلب') + '</div>';
+        }
+      })
+      .catch(() => {
+        msg.innerHTML = '<div class="alert-err"><i class="fas fa-exclamation-triangle"></i> خطأ في الاتصال</div>';
+      });
+    });
+  })();
+
+  // إرسال فورمَي تعديل السلفة (الأولى/الثانية) بـ AJAX لعرض الخطأ في نفس الصفحة
+  function wireEditAjax(formId, msgId, amountDisplayId){
+    const f = document.getElementById(formId);
+    const msg = document.getElementById(msgId);
+    const amountEl = document.getElementById(amountDisplayId);
+    if (!f) return;
+
+    f.addEventListener('submit', function(e){
+      e.preventDefault();
+      if (msg) msg.innerHTML = '';
+      const data = new FormData(f);
+      fetch(f.action, {
+        method: 'POST',
+        headers: {'X-Requested-With':'XMLHttpRequest'},
+        body: data
+      })
+      .then(r => r.json())
+      .then(d => {
+        if (d.ok){
+          if (msg) msg.innerHTML = '<div class="alert-ok">تم الحفظ بنجاح.</div>';
+          if (amountEl && d.amount){ amountEl.textContent = d.amount; }
+          setTimeout(() => { f.style.display = 'none'; }, 600);
+        }else{
+          if (msg) msg.innerHTML = '<div class="alert-err"><i class="fas fa-exclamation-triangle"></i> ' + (d.msg || 'تعذّر الحفظ') + '</div>';
+        }
+      })
+      .catch(() => {
+        if (msg) msg.innerHTML = '<div class="alert-err">خطأ في الاتصال</div>';
+      });
+    });
+  }
+  wireEditAjax('first-edit',  'first-edit-msg',  'first-amount');
+  wireEditAjax('second-edit', 'second-edit-msg', 'second-amount');
+
+  // حذف بالـ AJAX
+  function wireDeleteAjax(formId){
+    const f = document.getElementById(formId);
+    if (!f) return;
+    f.addEventListener('submit', function(e){
+      e.preventDefault();
+      const data = new FormData(f);
+      fetch(f.action, {
+        method: 'POST',
+        headers: {'X-Requested-With':'XMLHttpRequest'},
+        body: data
+      }).then(r => r.json())
+        .then(d => {
+          if (d.ok){
+            window.location.reload();
+          }else{
+            alert(d.msg || 'تعذّر حذف الطلب');
+          }
+        }).catch(() => alert('خطأ في الاتصال'));
+    });
+  }
+  wireDeleteAjax('first-delete');
+  wireDeleteAjax('second-delete');
+</script>
+{% endblock %}

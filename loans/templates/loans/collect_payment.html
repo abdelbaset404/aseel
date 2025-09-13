@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}تحصيل{% endblock %}
+{% block content %}
+<h2>تحصيل لقرض {{ loan.loan_number }}</h2>
+<p class="muted">المتبقي الحالي: {{ loan.total_remaining }}</p>
+<form method="post">
+  {% csrf_token %}
+  <label>المبلغ:
+    <input name="amount" type="number" step="0.01"
+           value="{{ loan.monthly_installment|default:loan.total_remaining }}">
+  </label>
+  <button class="btn primary" type="submit">تحصيل</button>
+</form>
+{% endblock %}

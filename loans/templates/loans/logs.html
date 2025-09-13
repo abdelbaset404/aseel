@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}سجل الأنشطة{% endblock %}
+{% block content %}
+<h2>سجل الأنشطة</h2>
+<table>
+  <thead>
+    <tr><th>التاريخ</th><th>المستخدم</th><th>الإجراء</th><th>المستهدف</th><th>تفاصيل</th></tr>
+  </thead>
+  <tbody>
+    {% for log in logs %}
+      <tr>
+        <td>{{ log.created_at|date:"Y-m-d H:i" }}</td>
+        <td>{{ log.actor }}</td>
+        <td>{{ log.action }}</td>
+        <td>{{ log.target_model }}#{{ log.target_id }}</td>
+        <td><pre style="white-space:pre-wrap">{{ log.payload|default:"-" }}</pre></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5" class="muted">لا يوجد نشاط.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

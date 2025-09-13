@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container" style="max-width: 500px; margin: 5rem auto;">
+    <div class="card">
+        <div class="card-header">
+            <h1 class="page-title text-center">
+                <i class="fas fa-sign-in-alt"></i>
+                تسجيل الدخول للنظام
+            </h1>
+        </div>
+
+        <div class="card-body">
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %}">
+                <i
+                    class="fas {% if message.tags == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %}"></i>
+                {{ message }}
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label for="employee_id">رقم الموظف:</label>
+                    <input type="text" id="employee_id" name="employee_id" class="form-control" required
+                        placeholder="أدخل رقم الموظف" autocomplete="username">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">كلمة المرور:</label>
+                    <input type="password" id="password" name="password" class="form-control" required
+                        placeholder="أدخل كلمة المرور" autocomplete="current-password">
+                </div>
+
+                <div class="form-group text-center mt-4">
+                    <button type="submit" class="btn" style="width: 100%; padding: 0.75rem;">
+                        <i class="fas fa-sign-in-alt"></i>
+                        دخول
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card-footer text-center">
+            <small class="text-muted">
+                نظام إدارة المرتبات © {% now "Y" %}
+            </small>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-control {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: var(--border-radius);
+        font-family: 'Tajawal', sans-serif;
+        font-size: 1rem;
+        transition: var(--transition);
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}

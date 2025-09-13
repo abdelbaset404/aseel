@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}إضافة قرض{% endblock %}
+{% block content %}
+{% if error %}
+  <div style="color:red; margin-bottom:10px;">{{ error }}</div>
+{% endif %}
+{% if messages %}
+  {% for message in messages %}
+    <div style="color:green; margin-bottom:10px; font-weight:bold;">
+      {{ message }}
+    </div>
+  {% endfor %}
+{% endif %}
+<style>
+  body {font-family: "Cairo", sans-serif;}
+  h2 {
+    font-size: 28px;
+    color: #16a34a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  h2::before {
+    content: "💰";
+  }
+
+  form.main-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 16px;
+    background: #f9f9f9;
+    padding: 10px;
+    border-radius: 14px;
+    border: 1px solid #ddd;
+    max-width: 700px;   /* أو أي قيمة أصغر تعجبك */
+    margin: 0 auto;     /* يخلي الفورم في نص الصفحة */
+  }
+
+  label {
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+    color: #374151;
+    gap: 6px;
+  }
+
+  input, select {
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    background: #fff;
+    font-size: 14px;
+    transition: all .2s;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: #16a34a;
+    box-shadow: 0 0 6px #16a34a44;
+  }
+
+  .form-actions {
+    grid-column: span 2;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 10px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 15px;
+    cursor: pointer;
+    border: none;
+    transition: transform .15s ease, background .2s;
+  }
+  .btn:disabled {opacity: .6; cursor:not-allowed}
+
+  .btn.primary {
+    background: #22c55e;
+    color: #fff;
+  }
+  .btn.primary:hover {
+    background: #16a34a;
+    transform: scale(1.05);
+  }
+
+  .btn.reset {
+    background: #e5e7eb;
+    color: #111;
+  }
+  .btn.reset:hover {
+    background: #d1d5db;
+    transform: scale(1.05);
+  }
+</style>
+
+<h2>إضافة قرض جديد</h2>
+
+<form method="get" action="{% url 'loans:prefill_by_nid' %}" class="inline" onsubmit="return prefill(event)" style="margin:0 auto 20px; display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;; max-width:700px;">
+  <label style="flex:1; min-width:200px;">الرقم القومي:
+    <input id="nid" type="text" name="nid" placeholder="14 رقم">
+  </label>
+  <button class="btn primary" type="submit">🔄 سحب البيانات</button>
+</form>
+
+<form method="post" class="main-form">
+  {% csrf_token %}
+  <label>الرقم القومي
+    <input id="f_nid" name="national_id" required maxlength="14" value="{{ form_data.national_id|default:'' }}">
+  </label>
+  <label>الاسم رباعي
+    <input id="f_name" name="full_name" required  value="{{ form_data.full_name|default:'' }}">
+  </label>
+  <label>رقم الهاتف
+    <input id="f_phone" name="phone" maxlength="11" value="{{ form_data.phone|default:'' }}">
+  </label>
+  <label>العنوان
+    <input id="f_address" name="address"  value="{{ form_data.address|default:'' }}">
+  </label>
+  <label>نوع المقترض
+    <select id="f_type" name="borrower_type">
+      <option value="employee" {% if form_data.borrower_type == 'employee' %}selected{% endif %}>ضمن الموظفين</option>
+      <option value="external" {% if form_data.borrower_type == 'external' %}selected{% endif %}>خارج الموظفين</option>
+    </select>
+  </label>
+  <label>قيمة القرض
+    <input name="amount" type="number" step="0.01" required value="{{ form_data.amount|default:'' }}">
+  </label>
+  <label>نوع السداد
+    <select name="repayment_type" id="repay" onchange="toggleFields()">
+      <option value="monthly"{% if form_data.repayment_type == 'monthly' %}selected{% endif %}>أقساط شهرية</option>
+      <option value="oneoff"{% if form_data.repayment_type == 'oneoff' %}selected{% endif %}>دفعة واحدة</option>
+    </select>
+  </label>
+  <label id="mi_wrap">القسط الشهري
+    <input name="monthly_installment" type="number" step="0.01">
+  </label>
+  <label id="md_wrap" style="display:none">تاريخ الاستحقاق
+    <input name="maturity_date" type="date">
+  </label>
+
+  <div class="form-actions">
+    <button class="btn primary" type="submit">✔ تأكيد</button>
+    <!--  <button class="btn reset" type="reset">✖ إلغاء</button>-->
+    <button class="btn reset" type="button" onclick="const form = this.closest('form');form.querySelectorAll('input').forEach(i=>{if(i.name !== 'csrfmiddlewaretoken'){ i.value=''; }});form.querySelectorAll('select').forEach(s=>s.selectedIndex=0);">✖ إلغاء</button>  </div>
+</form>
+
+<script>
+function toggleFields(){
+  const repay = document.getElementById('repay').value;
+  document.getElementById('mi_wrap').style.display = (repay === 'monthly') ? '' : 'none';
+  document.getElementById('md_wrap').style.display = (repay === 'oneoff') ? '' : 'none';
+}
+toggleFields();
+
+async function prefill(e){
+  e.preventDefault();
+  const nid = document.getElementById('nid').value.trim();
+  if(!nid) return false;
+
+  const url = "{% url 'loans:prefill_by_nid' %}?nid="+encodeURIComponent(nid);
+  const res = await fetch(url);
+  const data = await res.json();
+
+  // لو السيرفر رجع ok=false → وقف وماتنسخش الرقم
+  if(!res.ok || (data.ok !== undefined && !data.ok)){
+    alert(data.message || "الرقم القومي غير صالح (لازم يكون 14 رقم).");
+    return false;
+  }
+
+  // انسخ الرقم بس بعد التأكد
+  document.getElementById('f_nid').value = nid;
+  if(data.full_name)  document.getElementById('f_name').value = data.full_name;
+  if(data.phone)      document.getElementById('f_phone').value = data.phone;
+  if(data.address)    document.getElementById('f_address').value = data.address;
+  if(data.borrower_type) document.getElementById('f_type').value = data.borrower_type;
+  return false;
+}
+
+</script>
+{% endblock %}

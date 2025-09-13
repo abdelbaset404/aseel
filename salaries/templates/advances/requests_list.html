@@ -1,0 +1,566 @@
+{% extends "base.html" %}
+{% block content %}
+{% csrf_token %}
+<div class="container">
+
+<style>
+  /* شريط الأدوات */
+  .toolbar {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(120px, 1fr));
+    gap: .5rem;
+    margin-bottom: .75rem;
+    align-items: end;
+  }
+  @media (max-width: 992px){
+    .toolbar { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* الجدول */
+  table.table {
+    border-color: #e9ecef;
+  }
+  thead th {
+    background: #f9fbfd;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  td, th { vertical-align: middle; }
+
+  /* بادجات الحالة */
+  .badge-soft {
+    padding: .4rem .65rem;
+    border-radius: .5rem;
+    font-size: .85rem;
+    font-weight: 600;
+    display: inline-block;
+  }
+  .badge-status-UNDER_REVIEW { color: #aa6500; background: #fff3cd; }
+  .badge-status-APPROVED     { color: #0f5132; background: #d1e7dd; }
+  .badge-status-REJECTED     { color: #842029; background: #f8d7da; }
+
+  /* أزرار الأكشن للسطر */
+  .col-actions { min-width: 250px; }
+  .btn-actions {
+    display: inline-flex;
+    gap: 8px;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    align-items: center;
+  }
+  .btn-actions .btn {
+    padding: 6px 14px;
+    line-height: 1.2;
+    font-size: .9rem;
+    font-weight: 600;
+    border-radius: .4rem;
+  }
+
+  /* زر تعديل */
+  .btn-outline-secondary.btn-sm {
+    color: #495057;
+    background-color: #f8f9fa;
+    border-color: #adb5bd;
+  }
+  .btn-outline-secondary.btn-sm:hover {
+    background-color: #e9ecef;
+    color: #212529;
+  }
+
+  /* زر قبول */
+  .btn-outline-success.btn-sm {
+    color: #198754;
+    background-color: #e9f7ef;
+    border-color: #198754;
+  }
+  .btn-outline-success.btn-sm:hover {
+    background-color: #d1e7dd;
+    color: #145c32;
+  }
+
+  /* زر رفض */
+  .btn-outline-danger.btn-sm {
+    color: #dc3545;
+    background-color: #fbe9eb;
+    border-color: #dc3545;
+  }
+  .btn-outline-danger.btn-sm:hover {
+    background-color: #f8d7da;
+    color: #a71d2a;
+  }
+
+  /* -------------------------- */
+  /* الأزرار العامة أسفل الشاشة بنفس استايل أزرار التحكم */
+  /* -------------------------- */
+  .container .btn {
+    padding: 6px 14px;
+    line-height: 1.2;
+    font-size: .9rem;
+    font-weight: 600;
+    border-radius: .4rem;
+  }
+  .container .btn-outline-primary {
+    color: #0d6efd;
+    background-color: #e9f1ff;
+    border-color: #0d6efd;
+  }
+  .container .btn-outline-primary:hover {
+    background-color: #dbe7ff;
+    color: #0a58ca;
+  }
+  .container .btn-outline-dark {
+    color: #212529;
+    background-color: #e9ecef;
+    border-color: #212529;
+  }
+  .container .btn-outline-dark:hover {
+    background-color: #dee2e6;
+    color: #000;
+  }
+  .container .btn-light {
+    color: #495057;
+    background-color: #fff;
+    border-color: #ced4da;
+  }
+  .container .btn-light:hover {
+    background-color: #f8f9fa;
+    color: #212529;
+  }
+  .container .btn-info {
+    color: #0c5460;
+    background-color: #e7f5ff;
+    border-color: #31d2f2;
+  }
+  .container .btn-info:hover {
+    background-color: #d0ebff;
+    color: #084c56;
+  }
+  .container .btn-warning {
+    color: #997404;
+    background-color: #fff3cd;
+    border-color: #ffc107;
+  }
+  .container .btn-warning:hover {
+    background-color: #ffe69c;
+    color: #7a5c03;
+  }
+  .container .btn-success {
+    color: #0f5132;
+    background-color: #e9f7ef;
+    border-color: #198754;
+  }
+  .container .btn-success:hover {
+    background-color: #d1e7dd;
+    color: #145c32;
+  }
+  .container .btn-primary {
+    color: #0a58ca;
+    background-color: #e9f1ff;
+    border-color: #0d6efd;
+  }
+  .container .btn-primary:hover {
+    background-color: #dbe7ff;
+    color: #084298;
+  }
+  .container .btn-secondary {
+    color: #495057;
+    background-color: #f1f3f5;
+    border-color: #adb5bd;
+  }
+  .container .btn-secondary:hover {
+    background-color: #e9ecef;
+    color: #212529;
+  }
+  .container .btn-outline-danger {
+    color: #dc3545;
+    background-color: #fbe9eb;
+    border-color: #dc3545;
+  }
+  .container .btn-outline-danger:hover {
+    background-color: #f8d7da;
+    color: #a71d2a;
+  }
+
+  /* نافذة تأكيدات */
+  #msg .alert { margin-top: .5rem; }
+  .modal-backdrop-reset {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+  }
+  .modal-box-reset {
+    width: min(560px, 92vw);
+    background: #fff;
+    border-radius: .6rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    padding: 1rem 1.25rem;
+  }
+  .modal-box-reset h5 {
+    margin: 0 0 .5rem 0;
+    font-weight: 700;
+    color: #842029;
+  }
+  .modal-box-reset p {
+    margin: .25rem 0 .5rem;
+    color: #5c636a;
+    line-height: 1.6;
+  }
+  .modal-actions-reset {
+    margin-top: .75rem;
+    display: flex;
+    gap: .5rem;
+    justify-content: flex-end;
+  }
+  .modal-actions-reset .btn {
+    padding: 6px 14px;
+    line-height: 1.2;
+    font-size: .9rem;
+    font-weight: 600;
+    border-radius: .4rem;
+  }
+</style>
+
+  <h3 class="mb-3">طلبات السلف</h3>
+
+  <!-- فلاتر -->
+  <form class="toolbar">
+    <div>
+      <label class="form-label">النوع</label>
+      <select name="type" class="form-select form-select-sm">
+        <option value="">كل الأنواع</option>
+        <option value="FIRST"  {% if request.GET.type == 'FIRST' %}selected{% endif %}>الأولى</option>
+        <option value="SECOND" {% if request.GET.type == 'SECOND' %}selected{% endif %}>الثانية</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="form-label">الحالة</label>
+      <select name="status" class="form-select form-select-sm">
+        <option value="">كل الحالات</option>
+        <option value="UNDER_REVIEW" {% if request.GET.status == 'UNDER_REVIEW' %}selected{% endif %}>تحت المراجعة</option>
+        <option value="APPROVED"     {% if request.GET.status == 'APPROVED' %}selected{% endif %}>تم القبول</option>
+        <option value="REJECTED"     {% if request.GET.status == 'REJECTED' %}selected{% endif %}>تم الرفض</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="form-label">حالة الطلب</label>
+      <select name="complete" class="form-select form-select-sm">
+        <option value="">الكل</option>
+        <option value="yes" {% if request.GET.complete == 'yes' %}selected{% endif %}>Complete</option>
+        <option value="no"  {% if request.GET.complete == 'no' %}selected{% endif %}>Not Complete</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="form-label">حالة الدورة (الموظف)</label>
+      <select name="cycle" class="form-select form-select-sm">
+        <option value="">الكل</option>
+        <option value="complete"   {% if request.GET.cycle == 'complete' %}selected{% endif %}>سلفتان منتهيتان</option>
+        <option value="incomplete" {% if request.GET.cycle == 'incomplete' %}selected{% endif %}>غير مكتمل</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="form-label">بحث بالاسم</label>
+      <input type="text" name="q" class="form-control form-control-sm" placeholder="اسم الموظف"
+             value="{{ request.GET.q|default:'' }}">
+    </div>
+
+    <div class="d-flex gap-2">
+      <button class="btn btn-secondary btn-sm w-100">تصفية</button>
+      <a class="btn btn-light btn-sm w-100" href="{% url 'adv-requests' %}">إلغاء</a>
+    </div>
+  </form>
+
+  <!-- جدول -->
+  <div class="table-responsive">
+    <table class="table table-bordered align-middle">
+      <thead>
+        <tr>
+          <th>الموظف</th>
+          <th>النوع</th>
+          <th>المبلغ</th>
+          <th>الحالة</th>
+          <th>الفترة</th>
+          <th>تاريخ الإنشاء</th>
+          <th class="text-center col-actions">تحكم</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in requests %}
+        <tr id="row-{{ r.id }}">
+          <td>{{ r.user.get_full_name|default:r.user.username }}</td>
+          <td>{{ r.get_advance_type_display }}</td>
+          <td>{{ r.amount }}</td>
+          <td>
+            <span class="badge badge-soft badge-status-{{ r.status }}">
+              {{ r.get_status_display }}
+              {% if r.status == 'UNDER_REVIEW' and r.admin_decision %}
+                – مقترح: {{ r.get_admin_decision_display }}
+              {% endif %}
+            </span>
+          </td>
+          <td>{{ r.period.start_date }} → {{ r.period.end_date }}</td>
+          <td>{{ r.created_at }}</td>
+          <td class="text-center">
+            <div class="btn-actions">
+              <a class="btn btn-outline-secondary btn-sm" href="{% url 'adv-admin-edit' r.id %}">تعديل</a>
+
+              <button class="btn btn-outline-success btn-sm"
+                      onclick="actOne('{% url 'adv-approve-one' r.id %}')">
+                قبول
+              </button>
+
+              <button class="btn btn-outline-danger btn-sm"
+                      onclick="actOne('{% url 'adv-reject-one' r.id %}')">
+                رفض
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center">لا يوجد بيانات</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- الأزرار أسفل الصفحة (بنفس استايل أزرار التحكم) -->
+  <div class="d-flex flex-wrap gap-2">
+    <button class="btn btn-success btn-sm" onclick="openResetDialog()">
+      تأكيد عدم وجود طلبات قيد المراجعة
+    </button>
+
+    <a class="btn btn-outline-primary btn-sm"
+       href="{% url 'adv-export' %}?type={{ request.GET.type }}&status=APPROVED">
+      تصدير المقبولين (Excel)
+    </a>
+    <a class="btn btn-outline-danger btn-sm"
+       href="{% url 'adv-export' %}?type={{ request.GET.type }}&status=REJECTED">
+      تصدير المرفوضين (Excel)
+    </a>
+
+    <button class="btn btn-primary btn-sm" onclick="hit('{% url 'adv-approve-rest' %}')">قبول باقي الطلبات</button>
+    <button class="btn btn-warning btn-sm" onclick="hit('{% url 'adv-reject-rest' %}')">رفض باقي الطلبات</button>
+    <button class="btn btn-outline-dark btn-sm" onclick="openDeleteFirstDialog()">حذف طلبات السلفة الأولى</button>
+    <button class="btn btn-secondary btn-sm" onclick="openResetDialogMonthly()">Reset شهري (حذف الكل وتعطيل الفترات)</button>
+    <button class="btn btn-info btn-sm text-white" onclick="hit('{% url 'adv-sync-push' %}')">تحديث/مزامنة</button>
+  </div>
+
+  <div id="msg" class="mt-2"></div>
+
+  <!-- نافذة تأكيد "تأكيد عدم وجود طلبات قيد المراجعة" (تقفل الطلبات وتحوّل القرارات المبدئية إلى نهائية) -->
+  <div id="reset-modal" class="modal-backdrop-reset" role="dialog" aria-modal="true" aria-labelledby="reset-title" style="display:none;">
+    <div class="modal-box-reset">
+      <h5 id="reset-title">تأكيد نهائي</h5>
+      <p>سيتم تحويل كل القرارات المبدئية إلى حالات نهائية وقفل الطلبات. هل أنت متأكد؟</p>
+      <p id="reset-countdown" style="font-weight:600;color:#dc3545;">
+        يمكنك تأكيد الإجراء خلال <span id="reset-seconds">10</span> ثواني...
+      </p>
+      <div class="modal-actions-reset">
+        <button type="button" class="btn btn-light" onclick="closeResetDialog()">إلغاء</button>
+        <button id="reset-confirm-btn" type="button" class="btn btn-outline-danger" disabled onclick="confirmFinalLock()">
+          تأكيد (10)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- نافذة تأكيد "Reset شهري" (حذف الكل وتعطيل الفترات) -->
+  <div id="reset-monthly-modal" class="modal-backdrop-reset" role="dialog" aria-modal="true" aria-labelledby="reset-monthly-title" style="display:none;">
+    <div class="modal-box-reset">
+      <h5 id="reset-monthly-title">تحذير هام: حذف جميع طلبات السلف وتعطيل الفترات</h5>
+      <p>سيتم <strong>حذف جميع طلبات السلف</strong> وتعطيل الفترات النشطة. هذا الإجراء <strong>خطر ولا يمكن التراجع عنه</strong>.</p>
+      <p id="reset-monthly-countdown" style="font-weight:600;color:#dc3545;">
+        يمكنك تأكيد الحذف خلال <span id="reset-monthly-seconds">10</span> ثواني...
+      </p>
+      <div class="modal-actions-reset">
+        <button type="button" class="btn btn-light" onclick="closeResetDialogMonthly()">إلغاء</button>
+        <button id="reset-monthly-confirm-btn" type="button" class="btn btn-outline-danger" disabled onclick="confirmResetMonthly()">
+          تأكيد الحذف (10)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- نافذة تأكيد "حذف طلبات السلفة الأولى" -->
+  <div id="delete-first-modal" class="modal-backdrop-reset" role="dialog" aria-modal="true" aria-labelledby="delete-first-title" style="display:none;">
+    <div class="modal-box-reset">
+      <h5 id="delete-first-title">تحذير: حذف جميع طلبات السلفة الأولى</h5>
+      <p>سيتم <strong>حذف جميع طلبات السلفة الأولى</strong> فقط. هذا الإجراء <strong>خطير ولا يمكن التراجع عنه</strong>.</p>
+      <p id="delete-first-countdown" style="font-weight:600;color:#dc3545;">
+        يمكنك تأكيد الحذف خلال <span id="delete-first-seconds">10</span> ثواني...
+      </p>
+      <div class="modal-actions-reset">
+        <button type="button" class="btn btn-light" onclick="closeDeleteFirstDialog()">إلغاء</button>
+        <button id="delete-first-confirm-btn" type="button" class="btn btn-outline-danger" disabled onclick="confirmDeleteFirst()">
+          تأكيد الحذف (10)
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ---- CSRF ----
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+  const csrftoken = getCookie('csrftoken');
+
+  // ---- أكشنات GET البسيطة (قديمة/مسايرة لما عندك) ----
+  function hit(url){
+    fetch(url, {headers: {'X-Requested-With':'XMLHttpRequest'}})
+      .then(r => r.json())
+      .then(d => {
+        document.getElementById('msg').innerHTML =
+          '<div class="alert ' + (d.ok ? 'alert-success' : 'alert-danger') + '">' + (d.msg || ('count: '+d.count)) + '</div>';
+        if (d.ok) setTimeout(()=> window.location.reload(), 800);
+      })
+      .catch(() => document.getElementById('msg').innerHTML = '<div class="alert alert-danger">خطأ بالاتصال</div>');
+  }
+
+  // ---- قبول/رفض فردي (قرار مبدئي) ----
+  function actOne(url){
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': csrftoken
+      }
+    })
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById('msg').innerHTML =
+        '<div class="alert ' + (d.ok ? 'alert-success' : 'alert-danger') + '">' + (d.msg || '') + '</div>';
+      if (d.ok) setTimeout(() => window.location.reload(), 500);
+    })
+    .catch(() => {
+      document.getElementById('msg').innerHTML =
+        '<div class="alert alert-danger">خطأ بالاتصال</div>';
+    });
+  }
+
+  // ---- نافذة "تأكيد نهائي" (تحويل المقترحات إلى نهائي + قفل) ----
+  let finalTimer = null, finalLeft = 10;
+  function openResetDialog(){
+    const modal = document.getElementById('reset-modal');
+    const btn   = document.getElementById('reset-confirm-btn');
+    const secEl = document.getElementById('reset-seconds');
+
+    finalLeft = 10;
+    secEl.textContent = finalLeft;
+    btn.disabled = true;
+    btn.textContent = 'تأكيد (10)';
+    modal.style.display = 'flex';
+
+    finalTimer = setInterval(() => {
+      finalLeft--;
+      secEl.textContent = finalLeft;
+      btn.textContent = 'تأكيد (' + finalLeft + ')';
+      if (finalLeft <= 0) {
+        clearInterval(finalTimer);
+        finalTimer = null;
+        btn.disabled = false;
+        btn.textContent = 'تأكيد';
+      }
+    }, 1000);
+  }
+  function closeResetDialog(){
+    const modal = document.getElementById('reset-modal');
+    modal.style.display = 'none';
+    if (finalTimer) { clearInterval(finalTimer); finalTimer = null; }
+  }
+  function confirmFinalLock(){
+    closeResetDialog();
+    hit("{% url 'adv-confirm-no-review' %}");
+  }
+
+  // ---- نافذة "Reset شهري" (حذف الكل وتعطيل الفترات) ----
+  let resetTimer = null, resetLeft = 10;
+  function openResetDialogMonthly(){
+    const modal = document.getElementById('reset-monthly-modal');
+    const btn   = document.getElementById('reset-monthly-confirm-btn');
+    const secEl = document.getElementById('reset-monthly-seconds');
+
+    resetLeft = 10;
+    secEl.textContent = resetLeft;
+    btn.disabled = true;
+    btn.textContent = 'تأكيد الحذف (10)';
+    modal.style.display = 'flex';
+
+    resetTimer = setInterval(() => {
+      resetLeft--;
+      secEl.textContent = resetLeft;
+      btn.textContent = 'تأكيد الحذف (' + resetLeft + ')';
+      if (resetLeft <= 0) {
+        clearInterval(resetTimer);
+        resetTimer = null;
+        btn.disabled = false;
+        btn.textContent = 'تأكيد الحذف';
+      }
+    }, 1000);
+  }
+  function closeResetDialogMonthly(){
+    const modal = document.getElementById('reset-monthly-modal');
+    modal.style.display = 'none';
+    if (resetTimer) { clearInterval(resetTimer); resetTimer = null; }
+  }
+  function confirmResetMonthly(){
+    closeResetDialogMonthly();
+    hit("{% url 'adv-month-reset' %}");
+  }
+
+  // ---- نافذة "حذف طلبات السلفة الأولى" ----
+  let deleteFirstTimer = null, deleteFirstLeft = 10;
+  function openDeleteFirstDialog(){
+    const modal = document.getElementById('delete-first-modal');
+    const btn   = document.getElementById('delete-first-confirm-btn');
+    const secEl = document.getElementById('delete-first-seconds');
+
+    deleteFirstLeft = 10;
+    secEl.textContent = deleteFirstLeft;
+    btn.disabled = true;
+    btn.textContent = 'تأكيد الحذف (10)';
+    modal.style.display = 'flex';
+
+    deleteFirstTimer = setInterval(() => {
+      deleteFirstLeft--;
+      secEl.textContent = deleteFirstLeft;
+      btn.textContent = 'تأكيد الحذف (' + deleteFirstLeft + ')';
+      if (deleteFirstLeft <= 0) {
+        clearInterval(deleteFirstTimer);
+        deleteFirstTimer = null;
+        btn.disabled = false;
+        btn.textContent = 'تأكيد الحذف';
+      }
+    }, 1000);
+  }
+  function closeDeleteFirstDialog(){
+    const modal = document.getElementById('delete-first-modal');
+    modal.style.display = 'none';
+    if (deleteFirstTimer) { clearInterval(deleteFirstTimer); deleteFirstTimer = null; }
+  }
+  function confirmDeleteFirst(){
+    closeDeleteFirstDialog();
+    hit("{% url 'adv-delete-first' %}");
+  }
+</script>
+{% endblock %}

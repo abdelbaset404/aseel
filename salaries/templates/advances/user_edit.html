@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+  <h3>تعديل طلب السُلفة</h3>
+  {% if err %}<div class="alert alert-danger">{{ err }}</div>{% endif %}
+  <form method="post">
+    {% csrf_token %}
+    <div class="mb-2"><strong>النوع:</strong> {{ obj.get_advance_type_display }}</div>
+    <div class="mb-2"><strong>الفترة:</strong> {{ obj.period.start_date }} → {{ obj.period.end_date }}</div>
+    <div class="mb-2">
+      <label class="form-label">المبلغ</label>
+      <input type="number" step="0.01" name="amount" value="{{ obj.amount }}" class="form-control" required>
+    </div>
+    <div class="mb-2">
+      <label class="form-label">ملاحظات</label>
+      <textarea name="notes" class="form-control" rows="3">{{ obj.notes }}</textarea>
+    </div>
+    <button class="btn btn-primary">حفظ</button>
+    <a class="btn btn-light" href="{% url 'user-advances' %}">رجوع</a>
+  </form>
+</div>
+{% endblock %}

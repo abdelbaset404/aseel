@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block content %}
+{% load tz %}
+<div class="container">
+    <h1>
+        <i class="fas fa-file-excel"></i>
+        رفع ملف Excel لمفردات المرتب
+    </h1>
+
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert">
+        <i class="fas fa-check-circle"></i>
+        <span>{{ message }}</span>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <!-- أضفت id للـ form فقط -->
+    <form id="upload-form" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="id_file">اختر ملف Excel:</label>
+            <div class="file-input-container">
+                <div class="file-input">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <div>اسحب وأسقط الملف هنا أو انقر للاختيار</div>
+                    <div class="file-input-text">يجب أن يكون الملف بصيغة XLSX أو CSV (حجم أقصى 10MB)</div>
+                </div>
+                <div class="file-name" id="file-name"></div>
+                {{ form.file }}
+            </div>
+        </div>
+
+        <!-- زر الرفع -->
+        <button id="upload-btn" type="submit" class="btn">
+            <i class="fas fa-upload"></i> رفع الملف
+        </button>
+
+        <!-- شريط التقدم الحقيقي -->
+        <div id="progress-wrapper" style="display:none; margin-top:12px;">
+            <div id="progress-track" style="width:100%; height:10px; background:#e9ecef; border-radius:4px; overflow:hidden;">
+                <div id="progress-bar" style="width:0%; height:100%; background:#28a745; transition:width .2s;"></div>
+            </div>
+            <div id="progress-text" style="margin-top:6px; font-size:0.9rem; direction:ltr;">0%</div>
+            <div id="progress-msg" style="margin-top:6px; font-size:0.9rem;"></div>
+        </div>
+        <!-- نهاية شريط التقدم -->
+    </form>
+
+    <hr>
+    <h2 style="margin-top: 2rem;"><i class="fas fa-history"></i> سجل عمليات الرفع</h2>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>الملف</th>
+                <th>الشهر</th>
+                <th>تم الرفع بواسطة</th>
+                <th>وقت الرفع</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td>{{ log.file_name }}</td>
+                <td>{{ log.month|date:"Y/m" }}</td>
+                <td>
+                  {% if log.uploader %}
+                    {{ log.uploader.get_full_name|default:log.uploader.username }}
+                  {% else %}
+                    <em>مستخدم محذوف</em>
+                  {% endif %}
+                </td>
+                <td>{{ log.upload_time|localtime }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center">لا يوجد عمليات رفع بعد.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <hr><br><br>
+    <form method="post" action="{% url 'delete-all-salaries' %}" onsubmit="return confirm('هل أنت متأكد أنك تريد حذف جميع بيانات المرتبات؟');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger" style="background-color:red">
+            <i class="fas a-trash-alt"></i>
+            حذف كل بيانات المرتبات
+        </button>
+    </form>
+</div>
+
+<script>
+    // --- كودك الأصلي لاختيار الملف والسحب والإفلات ---
+    document.getElementById('id_file').addEventListener('change', function (e) {
+        const fileName = e.target.files[0]?.name || '';
+        const fileNameElement = document.getElementById('file-name');
+        if (fileName) {
+            fileNameElement.textContent = `الملف المحدد: ${fileName}`;
+            fileNameElement.style.display = 'block';
+        } else {
+            fileNameElement.style.display = 'none';
+        }
+    });
+
+    const fileInputContainer = document.querySelector('.file-input-container');
+    const fileInput = document.querySelector('.file-input');
+    ['dragenter','dragover','dragleave','drop'].forEach(n=>fileInputContainer.addEventListener(n, e=>{e.preventDefault();e.stopPropagation();}, false));
+    ['dragenter','dragover'].forEach(n=>fileInputContainer.addEventListener(n, ()=>fileInput.classList.add('highlight'), false));
+    ['dragleave','drop'].forEach(n=>fileInputContainer.addEventListener(n, ()=>fileInput.classList.remove('highlight'), false));
+    fileInputContainer.addEventListener('drop', function(e){
+        const files = e.dataTransfer.files;
+        document.getElementById('id_file').files = files;
+        const fileName = files[0]?.name || '';
+        const el = document.getElementById('file-name');
+        if (fileName) { el.textContent = `الملف المحدد: ${fileName}`; el.style.display='block'; }
+        else { el.style.display='none'; }
+    }, false);
+
+    // --- رفع حقيقي مع Polling للتقدّم ---
+    (function(){
+      const form = document.getElementById('upload-form');
+      const btn  = document.getElementById('upload-btn');
+      const wrap = document.getElementById('progress-wrapper');
+      const bar  = document.getElementById('progress-bar');
+      const text = document.getElementById('progress-text');
+      const msg  = document.getElementById('progress-msg');
+
+      function setPct(p){ bar.style.width = p + '%'; text.textContent = p + '%'; }
+
+      function poll(uploadId){
+        const url = "{% url 'salary-upload-progress' 'UPID' %}".replace('UPID', uploadId);
+        const iv = setInterval(()=>{
+          fetch(url, {headers:{'X-Requested-With':'XMLHttpRequest'}})
+            .then(r=>r.json())
+            .then(d=>{
+              if (!d.ok) return;
+              if (typeof d.percent === 'number') setPct(d.percent);
+              if (d.status === 'error'){
+                clearInterval(iv);
+                msg.innerHTML = '<div class="alert alert-danger">خطأ أثناء المعالجة: ' + (d.error||'') + '</div>';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-upload"></i> رفع الملف';
+              } else if (d.status === 'done'){
+                clearInterval(iv);
+                setPct(100);
+                msg.innerHTML = '<div class="alert alert-success">تم الرفع والمعالجة بالكامل.</div>';
+                setTimeout(()=> window.location.reload(), 800);
+              }
+            })
+            .catch(()=>{ /* تجاهل */ });
+        }, 800);
+      }
+
+      if (form){
+        form.addEventListener('submit', function(e){
+          e.preventDefault();
+
+          const fd = new FormData(form);
+          const csrfInput = form.querySelector('input[name=csrfmiddlewaretoken]');
+          wrap.style.display = 'block';
+          setPct(0);
+          msg.innerHTML = '<div class="alert alert-warning">بدأت المعالجة…</div>';
+          btn.disabled = true;
+          btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الرفع…';
+
+          fetch("{% url 'salary-upload-start' %}", {
+            method: 'POST',
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest',
+              ...(csrfInput ? {'X-CSRFToken': csrfInput.value} : {})
+            },
+            body: fd
+          })
+          .then(r=>r.json())
+          .then(d=>{
+            if (d.ok && d.upload_id){
+              poll(d.upload_id);
+            } else {
+              msg.innerHTML = '<div class="alert alert-danger">' + (d.msg || 'تعذّر بدء الرفع') + '</div>';
+              btn.disabled = false;
+              btn.innerHTML = '<i class="fas fa-upload"></i> رفع الملف';
+            }
+          })
+          .catch(()=>{
+            msg.innerHTML = '<div class="alert alert-danger">تعذّر الاتصال بالخادم</div>';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-upload"></i> رفع الملف';
+          });
+        });
+      }
+    })();
+</script>
+{% endblock %}

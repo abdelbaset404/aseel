@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container">
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="fas fa-file-invoice"></i>
+            تفاصيل كشف المرتب
+        </h1>
+        <a href="{% url 'salary_list' %}" class="btn btn-outline">
+            <i class="fas fa-arrow-right"></i>
+            رجوع للقائمة
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">
+                كشف مرتب {{ slip.user.get_full_name }} - {{ slip.month|date:"F Y" }}
+            </h2>
+        </div>
+
+        <div class="card-body">
+            <div class="row" style="display: flex; justify-content: space-between; margin-bottom: 2rem;">
+                <div>
+                    <h3>البيانات الشخصية</h3>
+                    <p><strong>الاسم:</strong> {{ slip.user.get_full_name }}</p>
+                    <p><strong>رقم الموظف:</strong> {{ slip.user.employee_id }}</p>
+                </div>
+                <div>
+                    <h3>تفاصيل الكشف</h3>
+                    <p><strong>الشهر:</strong> {{ slip.month|date:"F Y" }}</p>
+                </div>
+            </div>
+
+            <div class="row" style="display: flex; justify-content: space-between;">
+                <div style="width: 48%;">
+                    <h3>الإضافات</h3>
+                    <table class="w-100">
+                        <tr>
+                            <td>المرتب الأساسي:</td>
+                            <td class="text-right">{{ slip.base_salary }} ج.م</td>
+                        </tr>
+                        <tr>
+                            <td>المرتب المتغير:</td>
+                            <td class="text-right">{{ slip.changed_salary }} ج.م</td>
+                        </tr>
+                        <tr>
+                            <td>علاوة استثنائية:</td>
+                            <td class="text-right">{{ slip.special_bonus }} ج.م</td>
+                        </tr>
+                        <tr>
+                            <td>إضافي:</td>
+                            <td class="text-right">{{ slip.extra }} ج.م</td>
+                        </tr>
+                        <tr>
+                            <td>بدل الراحة:</td>
+                            <td class="text-right">{{ slip.rest_allowance }} ج.م</td>
+                        </tr>
+                        <tr>
+                            <td>تقييم أداء:</td>
+                            <td class="text-right">{{ slip.performance_evaluation }} ج.م</td>
+                        </tr>
+                        <tr>
+                            <td>حافز استثنائى:</td>
+                            <td class="text-right">{{ slip.special_incentive }} ج.م</td>
+                        </tr>
+                        <tr>
+                            <td>بدل وجبة:</td>
+                            <td class="text-right">{{ slip.meal_allowance }} ج.م</td>
+                        </tr>
+                        <tr>
+                            <td>بدل انتقال:</td>
+                            <td class="text-right">{{ slip.transport_allowance }} ج.م</td>
+                        </tr>
+                        <tr style="border-top: 1px solid #eee;">
+                            <td><strong>إجمالي الاستحقاقات:</strong></td>
+                            <td class="text-right text-success">
+                                <strong>{{ slip.total_entitlements }} ج.م</strong>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div style="width: 48%;">
+                    <h3>الخصومات</h3>
+                    <table class="w-100">
+                        <tr>
+                            <td>السلف:</td>
+                            <td class="text-right">-{{ slip.loan }} ج.م</td>
+                        </tr>
+                        <tr>
+                            <td>تأمينات:</td>
+                            <td class="text-right">-{{ slip.insurance }} ج.م</td>
+                        </tr>
+                        <tr>
+                            <td>الغياب:</td>
+                            <td class="text-right">-{{ slip.absence }} ج.م</td>
+                        </tr>
+                        <tr>
+                            <td>الجزاءات:</td>
+                            <td class="text-right">-{{ slip.penalties }} ج.م</td>
+                        </tr>
+                        <tr>
+                            <td>خصم الجودة نقدى:</td>
+                            <td class="text-right">-{{ slip.quality_deduction_cash }} ج.م</td>
+                        </tr>
+                        <tr>
+                            <td>خصم الجودة أيام:</td>
+                            <td class="text-right">-{{ slip.quality_deduction_days }} ج.م</td>
+                        </tr>
+                        <tr>
+                            <td>الأقساط:</td>
+                            <td class="text-right">-{{ slip.installments }} ج.م</td>
+                        </tr>
+                        <tr>
+                            <td>الايصالات الشهرية:</td>
+                            <td class="text-right">-{{ slip.monthly_receipts }} ج.م</td>
+                        </tr>
+                        <tr style="border-top: 1px solid #eee;">
+                            <td><strong>إجمالي الاستقطاعات:</strong></td>
+                            <td class="text-right text-danger">
+                                <strong>-{{ slip.total_deductions }} ج.م</strong>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="row" style="margin-top: 2rem; padding-top: 1rem; border-top: 2px solid var(--primary-color);">
+                <div style="width: 100%; text-align: left;">
+                    <h2>صافي المرتب: <span class="text-success">{{ slip.net_salary }} ج.م</span></h2>
+                </div>
+            </div>
+
+            {% if request.user.role in 'admin hr' %}
+            <button class="btn" id="edit-notes-btn" onclick="toggleNotesEdit()">
+                <i class="fas fa-edit"></i>
+                تعديل الملاحظات
+            </button>
+            {% endif %}
+            {% if request.user.role in 'admin hr' %}
+            <div class="row" style="margin-top: 2rem;">
+                <form method="post" id="notes-form" style="display: none; width: 100%;">
+                    {% csrf_token %}
+                    <h3>ملاحظات:</h3>
+                    <textarea name="notes" class="form-control"
+                        style="width: 100%; min-height: 100px; padding: 1rem; border-radius: var(--border-radius); border: 1px solid #e5e7eb;">{{ slip.notes|default:'' }}</textarea>
+                    <div style="margin-top: 1rem;">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i>
+                            حفظ الملاحظات
+                        </button>
+                        <button type="button" class="btn btn-outline" onclick="toggleNotesEdit()">
+                            <i class="fas fa-times"></i>
+                            إلغاء
+                        </button>
+                    </div>
+                </form>
+            </div>
+            {% endif %}
+
+            {% if slip.notes %}
+            <div class="row" id="notes-display"
+                style="margin-top: 2rem; padding: 1rem; background-color: #f8f9fa; border-radius: var(--border-radius);">
+                <h3>ملاحظات:</h3>
+                <p>{{ slip.notes }}</p>
+                {% if request.user.role in 'admin hr' %}
+                <small style="color: var(--gray-color);"> اخر تعديل في{{ slip.updated_at|date:"Y/m/d H:i" }}</small>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% if request.user.role in 'admin hr' and slip.user.role == 'user' %}
+            <br><br>
+            <form method="post" action="{% url 'reset-user-password' slip.user.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger" style="background-color:red">
+                    <i class="fas fa-key"></i>
+                    إعادة تعيين كلمة المرور لهذا المستخدم
+                </button>
+            </form>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+<style>
+    @media print {
+
+        .navbar,
+        .page-header .btn,
+        .card-header .btn {
+            display: none !important;
+        }
+
+        body {
+            background-color: white !important;
+        }
+
+        .card {
+            box-shadow: none !important;
+            border: none !important;
+        }
+    }
+</style>
+
+<script>
+    function toggleNotesEdit() {
+        const form = document.getElementById('notes-form');
+        const display = document.getElementById('notes-display');
+
+        if (form.style.display === 'none') {
+            form.style.display = 'block';
+            if (display) display.style.display = 'none';
+        } else {
+            form.style.display = 'none';
+            if (display) display.style.display = 'block';
+        }
+    }
+
+    {% if request.user.role in 'admin hr' and not slip.notes %}
+    document.addEventListener('DOMContentLoaded', function () {
+        toggleNotesEdit();
+    });
+    {% endif %}
+</script>
+{% endblock %}

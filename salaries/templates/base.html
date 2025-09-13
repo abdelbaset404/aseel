@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}نظام المرتبات{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="icon" href="data:image/png;base64,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" type="image/png">
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --primary-light: #eef2ff;
+            --secondary-color: #3f37c9;
+            --success-color: #10b981;
+            --success-light: #d1fae5;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --light-color: #f8f9fa;
+            --dark-color: #1f2937;
+            --gray-color: #6b7280;
+            --border-radius: 12px;
+            --box-shadow: 0 4px 30px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: #f9fafb;
+            color: var(--dark-color);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        {% if user.role == 'user' %}
+        body{
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+        {% endif %}
+
+
+        .navbar {
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .navbar-brand i {
+            font-size: 1.5rem;
+        }
+
+        .navbar-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .nav-link {
+            color: var(--dark-color);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 0;
+            position: relative;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-link:hover {
+            color: var(--primary-color);
+        }
+
+        .nav-link.active {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--primary-color);
+        }
+
+        .nav-link i {
+            font-size: 1rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+            flex: 1;
+            width: 100%;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            color: var(--dark-color);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.75rem;
+        }
+
+        .page-title i {
+            color: var(--primary-color);
+            background-color: var(--primary-light);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: var(--border-radius);
+            font-family: 'Tajawal', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            box-shadow: 0 4px 6px rgba(67, 97, 238, 0.1);
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px rgba(67, 97, 238, 0.15);
+        }
+
+        .btn i {
+            font-size: 0.9rem;
+        }
+
+
+        .card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .card-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--dark-color);
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+
+        .form-group {
+            margin-bottom: 2rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            color: var(--dark-color);
+            font-size: 1rem;
+        }
+
+        .file-input-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .file-input {
+            width: 100%;
+            padding: 2.5rem 1.5rem;
+            border: 2px dashed #e5e7eb;
+            border-radius: var(--border-radius);
+            background-color: var(--light-color);
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .file-input.highlight {
+            border-color: var(--primary-color);
+            background-color: var(--primary-light);
+        }
+
+        .file-input i {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            opacity: 0.8;
+        }
+
+        .file-input-text {
+            margin-top: 0.75rem;
+            font-size: 0.9rem;
+            color: var(--gray-color);
+        }
+
+        .file-name {
+            margin-top: 1rem;
+            font-size: 0.95rem;
+            color: var(--primary-color);
+            font-weight: 500;
+            display: none;
+            background-color: var(--primary-light);
+            padding: 0.75rem 1rem;
+            border-radius: var(--border-radius);
+            border: 1px solid rgba(67, 97, 238, 0.2);
+        }
+
+        input[type="file"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            top: 0;
+            left: 0;
+            cursor: pointer;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: var(--border-radius);
+            font-family: 'Tajawal', sans-serif;
+            font-size: 0.95rem;
+            transition: var(--transition);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+        }
+
+        .filter-select {
+            padding: 0.75rem 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: var(--border-radius);
+            font-family: 'Tajawal', sans-serif;
+            font-size: 0.95rem;
+            background-color: white;
+            min-width: 180px;
+            transition: var(--transition);
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+        }
+
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background-color: #f9fafb;
+            border-bottom: 2px solid #f3f4f6;
+        }
+
+        th,
+        td {
+            padding: 1rem 1.25rem;
+            text-align: right;
+            font-size: 0.95rem;
+        }
+
+        th {
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        td {
+            color: var(--gray-color);
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+
+        .text-primary {
+            color: var(--primary-color);
+        }
+
+        .text-success {
+            color: var(--success-color);
+        }
+
+        .text-warning {
+            color: var(--warning-color);
+        }
+
+        .text-danger {
+            color: var(--danger-color);
+        }
+
+
+        .alert {
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.95rem;
+        }
+
+        .alert-success {
+            background-color: var(--success-light);
+            color: #065f46;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .alert-danger {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .alert-warning {
+            background-color: #fef3c7;
+            color: #92400e;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .alert-info {
+            background-color: #dbeafe;
+            color: #1e40af;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .alert i {
+            font-size: 1.25rem;
+        }
+
+
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f3f4f6;
+            color: var(--gray-color);
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+        }
+
+        .action-btn:hover {
+            background-color: #e5e7eb;
+        }
+
+        .action-btn i {
+            font-size: 0.8rem;
+        }
+
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+        }
+
+        .page-item {
+            list-style: none;
+        }
+
+        .page-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: var(--border-radius);
+            background-color: white;
+            color: var(--gray-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition);
+            border: 1px solid #e5e7eb;
+        }
+
+        .page-link:hover {
+            background-color: #f3f4f6;
+            color: var(--primary-color);
+        }
+
+        .page-link.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+
+        .search-filter {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+
+        .footer {
+            background-color: white;
+            padding: 1.5rem 2rem;
+            text-align: center;
+            border-top: 1px solid #f3f4f6;
+            margin-top: 2rem;
+            color: var(--gray-color);
+            font-size: 0.9rem;
+        }
+
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-left {
+            text-align: left;
+        }
+
+        .mt-1 {
+            margin-top: 0.5rem;
+        }
+
+        .mt-2 {
+            margin-top: 1rem;
+        }
+
+        .mt-3 {
+            margin-top: 1.5rem;
+        }
+
+        .mt-4 {
+            margin-top: 2rem;
+        }
+
+        .mt-5 {
+            margin-top: 3rem;
+        }
+
+        .mb-1 {
+            margin-bottom: 0.5rem;
+        }
+
+        .mb-2 {
+            margin-bottom: 1rem;
+        }
+
+        .mb-3 {
+            margin-bottom: 1.5rem;
+        }
+
+        .mb-4 {
+            margin-bottom: 2rem;
+        }
+
+        .mb-5 {
+            margin-bottom: 3rem;
+        }
+
+        .p-3 {
+            padding: 1.5rem;
+        }
+
+        .p-4 {
+            padding: 2rem;
+        }
+
+        .p-5 {
+            padding: 3rem;
+        }
+
+        .w-100 {
+            width: 100%;
+        }
+
+        .welcome-message {
+            color: #000;
+            padding: 0.5rem 1rem;
+            margin-right: 1rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+        }
+        .profile-popup {
+            display: none;
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            width: 300px;
+            z-index: 1000;
+            padding: 20px;
+            animation: fadeIn 0.3s ease-in-out;
+            font-family: 'Segoe UI', sans-serif;
+            direction: rtl;
+            text-align: right;
+        }
+
+        .profile-popup h3 {
+            margin-top: 0;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .profile-popup p {
+            margin: 5px 0;
+            color: #555;
+        }
+
+        .reset-btn {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 15px;
+            background-color: #28a745;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            transition: background-color 0.2s ease;
+        }
+
+        .reset-btn:hover {
+            background-color: #218838;
+        }
+
+        @keyframes fadeIn {
+            from {opacity: 0; transform: translateY(-10px);}
+            to {opacity: 1; transform: translateY(0);}
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+                margin: 1.5rem auto;
+            }
+
+            .navbar {
+                padding: 1rem;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .navbar-links {
+                width: 100%;
+                justify-content: space-around;
+                gap: 0.5rem;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .page-title {
+                font-size: 1.5rem;
+            }
+
+            .page-title i {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+
+            .search-filter {
+                flex-direction: column;
+            }
+
+            th,
+            td {
+                padding: 0.75rem;
+                font-size: 0.85rem;
+            }
+        }
+
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <nav class="navbar">
+        <a href="/" class="navbar-brand">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <span>نظام المرتبات</span>
+        </a>
+        <div class="navbar-links">
+            {% if user.is_authenticated and user.is_defult_password == False %}
+                <span id="profileTrigger" style="cursor: pointer; font-weight: bold; display: flex; align-items: center;">مرحباً {{ user.first_name }} {{ user.last_name }}</span>
+
+                <div id="profilePopup" class="profile-popup">
+                <div class="profile-content">
+                    <h3>👤 بيانات المستخدم</h3>
+                    <p><strong>الاسم:</strong> {{ user.first_name }} {{ user.last_name }}</p>
+                    <p><strong>الرقم التعريفي:</strong> {{ request.user.employee_id }}</p>
+
+                    <a href="{% url 'reset-password' %}" class="reset-btn">🔒 تغيير كلمة المرور</a>
+                </div>
+                </div>
+
+                <a href="{% url 'salary_list' %}"
+                    class="nav-link {% if request.resolver_match.url_name == 'salary_list' %}active{% endif %}">
+                    <i class="fas fa-list"></i>
+                    <span>كشوف المرتبات</span>
+                </a>
+                {% if user.role in 'admin hr' %}
+                    <a href="{% url 'upload_excel' %}"
+                        class="nav-link {% if request.resolver_match.url_name == 'upload_excel' %}active{% endif %}">
+                        <i class="fas fa-file-upload"></i>
+                        <span>رفع كشف جديد</span>
+                    </a>
+                    <a href="/admin" class="nav-link">
+                        <i class="fas fa-cog"></i>
+                        <span>لوحة التحكم</span>
+                    </a>
+                {% endif %}
+
+                {# --- زر طلب سلفة (لجميع المستخدمين) --- #}
+                <a href="{% url 'user-advances' %}"
+                   class="nav-link {% if request.resolver_match.url_name == 'user-advances' %}active{% endif %}">
+                   <i class="fas fa-hand-holding-usd"></i>
+                   <span>طلب سلفة</span>
+                </a>
+
+                {# --- زر إدارة السلف (للأدمن فقط) --- #}
+                {% if user.is_staff or user.is_superuser or user.role in 'admin hr' %}
+                  <a href="{% url 'adv-requests' %}"
+                     class="nav-link {% if request.resolver_match.url_name == 'adv-requests' %}active{% endif %}">
+                     <i class="fas fa-users-gear"></i>
+                     <span>إدارة السلف</span>
+                  </a>
+
+                  <a href="{% url 'adv-periods' %}"
+                     class="nav-link {% if request.resolver_match.url_name == 'adv-periods' %}active{% endif %}">
+                     <i class="fas fa-calendar-alt"></i>
+                     <span>فترات السلف</span>
+                  </a>
+                {% endif %}
+                {% if request.user.is_superuser %}
+                  <a href="{% url 'loans:loan_add' %}"
+                     class="nav-link {% if request.resolver_match.url_name == 'loan_add' %}active{% endif %}">
+                     <i class="fas fa-plus-circle"></i>
+                     <span>إضافة قرض</span>
+                  </a>
+
+                  <a href="{% url 'loans:loan_list' %}"
+                     class="nav-link {% if request.resolver_match.url_name == 'loan_list' %}active{% endif %}">
+                     <i class="fas fa-folder-open"></i>
+                     <span>إدارة القروض</span>
+                  </a>
+
+                  <a href="{% url 'loans:inquiry' %}"
+                     class="nav-link {% if request.resolver_match.url_name == 'inquiry' %}active{% endif %}">
+                     <i class="fas fa-search"></i>
+                     <span>استعلام</span>
+                  </a>
+              {% endif %}
+                <a href="{% url 'logout' %}" class="nav-link">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>تسجيل الخروج</span>
+                </a>
+            {% else %}
+                {% if user.is_defult_password == True %}
+                <p style="margin:10px 0 0 200px;"><strong> أهلا: </strong> {{ user.first_name }} {{ user.last_name }}<span style="color:red;"> يجب عليك تغير كلمة المرور الافتراضية اولاً</span></p>
+                <a href="{% url 'logout' %}" class="nav-link">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>تسجيل الخروج</span>
+
+                </a>
+                {% else %}
+                <a href="{% url 'web-login' %}" class="nav-link">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>تسجيل الدخول</span>
+                </a>
+                {% endif %}
+            {% endif %}
+        </div>
+    </nav>
+
+
+    <div class="container">
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            <i class="fas
+                        {% if message.tags == 'success' %}fa-check-circle
+                        {% elif message.tags == 'error' %}fa-times-circle
+                        {% elif message.tags == 'warning' %}fa-exclamation-triangle
+                        {% else %}fa-info-circle{% endif %}">
+            </i>
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer class="footer">
+        <p>جميع الحقوق محفوظة &copy; نظام المرتبات {% now "Y" %}</p>
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+</body>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const trigger = document.getElementById('profileTrigger');
+    const popup = document.getElementById('profilePopup');
+
+    trigger.addEventListener('click', function () {
+      const rect = trigger.getBoundingClientRect();
+
+      popup.style.top = (window.scrollY + rect.bottom + 10) + 'px';
+      popup.style.left = (window.scrollX + rect.left) + 'px';
+
+      popup.style.display = popup.style.display === 'block' ? 'none' : 'block';
+    });
+
+    document.addEventListener('click', function (event) {
+      if (!popup.contains(event.target) && !trigger.contains(event.target)) {
+        popup.style.display = 'none';
+      }
+    });
+  });
+</script>
+
+</html>
