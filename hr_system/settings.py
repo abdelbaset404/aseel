@@ -83,24 +83,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'hr_system.wsgi.application'
 
-#DATABASES = {
-    #'default': {
-    #    'ENGINE': 'django.db.backends.postgresql',
-    #    'NAME': 'mysales',       # اسم قاعدة البيانات اللي أنشأتها في pgAdmin
-    #    'USER': 'postgres',        # المستخدم الافتراضي أو اللي انت عملته
-    #    'PASSWORD': '9874123',  # الباسورد اللي اخترته وقت تثبيت PostgreSQL
-    #    'HOST': 'localhost',
-    #    'PORT': '5432',
-    #}
-#}
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'abdelbaset404$mysalary',   # هتلاقيه في صفحة Databases
-        'USER': 'abdelbaset404',              # نفس اليوزر بتاعك في PythonAnywhere
-        'PASSWORD': '@9874321',          # الباسورد اللي اخترته للـ DB
-        'HOST': 'abdelbaset404.mysql.pythonanywhere-services.com',
-        'PORT': '3306',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'mysales',       # اسم قاعدة البيانات اللي أنشأتها في pgAdmin
+        'USER': 'postgres',        # المستخدم الافتراضي أو اللي انت عملته
+        'PASSWORD': '9874123',  # الباسورد اللي اخترته وقت تثبيت PostgreSQL
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
 
