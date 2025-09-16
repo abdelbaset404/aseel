@@ -83,17 +83,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'hr_system.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'mysales',       # اسم قاعدة البيانات اللي أنشأتها في pgAdmin
-        'USER': 'postgres',        # المستخدم الافتراضي أو اللي انت عملته
-        'PASSWORD': '9874123',  # الباسورد اللي اخترته وقت تثبيت PostgreSQL
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
-}
-
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.sqlite3',
