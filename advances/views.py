@@ -555,7 +555,7 @@ def delete_first_advance_requests(request):
 @user_passes_test(is_admin)
 def sync_push(request):
     return JsonResponse({'ok': True, 'msg': 'تم التحديث للمستخدمين'})
-#-------------------------------------------------------------------
+#--------------------------------------api-----------------------------
 from rest_framework import viewsets, permissions, status
 from django.utils import timezone
 from rest_framework.views import APIView
@@ -565,6 +565,18 @@ from .models import AdvanceRequest, AdvancePeriod
 from .serializers import AdvanceRequestSerializer
 from decimal import Decimal
 from django.core.exceptions import ValidationError as DjangoValidationError
+
+def format_error_messages(e):
+    messages = []
+    if hasattr(e, "message_dict"):
+        for _, errs in e.message_dict.items():
+            messages.extend(errs)
+    elif hasattr(e, "messages"):
+        messages.extend(e.messages)
+    else:
+        messages = [str(e)]
+    return messages
+
 
 class AdvanceRequestViewSet(viewsets.ModelViewSet):
     serializer_class = AdvanceRequestSerializer
@@ -584,8 +596,11 @@ class AdvanceRequestViewSet(viewsets.ModelViewSet):
                 "message": "تم تسجيل طلب السلفة بنجاح.",
                 "data": response.data
             }, status=200)
-        except Exception as e:
-            return Response({"success": False, "message": str(e)}, status=200)
+        except (DjangoValidationError, ValidationError, Exception) as e:
+            return Response({
+                "success": False,
+                "message": format_error_messages(e)
+            }, status=400)
 
     def update(self, request, *args, **kwargs):
         """تعديل طلب سلفة"""
@@ -593,14 +608,14 @@ class AdvanceRequestViewSet(viewsets.ModelViewSet):
 
         # تحقق الصلاحيات
         if instance.user != self.request.user:
-            return Response({"success": False, "message": "لا تملك صلاحية تعديل هذا الطلب."}, status=200)
+            return Response({"success": False, "message": ["لا تملك صلاحية تعديل هذا الطلب."]}, status=400)
 
         today = timezone.localdate()
         if not (instance.period.start_date <= today <= instance.period.end_date and instance.period.is_active):
-            return Response({"success": False, "message": "لا يمكن تعديل طلب السلفة لأن الفترة مغلقة."}, status=200)
+            return Response({"success": False, "message": ["لا يمكن تعديل طلب السلفة لأن الفترة مغلقة."]}, status=400)
 
         if instance.status != "UNDER_REVIEW" or instance.locked or instance.admin_decision or getattr(instance, "user_locked", False):
-            return Response({"success": False, "message": "لا يمكن تعديل طلب السلفة بعد وجود قرار مبدئي أو تأكيد."}, status=200)
+            return Response({"success": False, "message": ["لا يمكن تعديل طلب السلفة بعد وجود قرار مبدئي أو تأكيد."]}, status=400)
 
         # محاولة التعديل
         try:
@@ -610,28 +625,25 @@ class AdvanceRequestViewSet(viewsets.ModelViewSet):
                 "message": "تم تعديل طلب السلفة بنجاح.",
                 "data": response.data
             }, status=200)
-        except DjangoValidationError as e:
-            messages = []
-            if hasattr(e, "message_dict"):
-                for _, errs in e.message_dict.items():
-                    messages.extend(errs)
-            elif hasattr(e, "messages"):
-                messages.extend(e.messages)
-            return Response({"success": False, "message": " ".join(messages)}, status=200)
+        except (DjangoValidationError, ValidationError, Exception) as e:
+            return Response({
+                "success": False,
+                "message": format_error_messages(e)
+            }, status=400)
 
     def destroy(self, request, *args, **kwargs):
         """حذف طلب سلفة"""
         instance = self.get_object()
 
         if instance.user != self.request.user:
-            return Response({"success": False, "message": "لا تملك صلاحية حذف هذا الطلب."}, status=200)
+            return Response({"success": False, "message": ["لا تملك صلاحية حذف هذا الطلب."]}, status=400)
 
         today = timezone.localdate()
         if not (instance.period.start_date <= today <= instance.period.end_date and instance.period.is_active):
-            return Response({"success": False, "message": "لا يمكن حذف طلب السلفة لأن الفترة مغلقة."}, status=200)
+            return Response({"success": False, "message": ["لا يمكن حذف طلب السلفة لأن الفترة مغلقة."]}, status=400)
 
         if instance.status != "UNDER_REVIEW" or instance.locked or instance.admin_decision or getattr(instance, "user_locked", False):
-            return Response({"success": False, "message": "لا يمكن حذف طلب السلفة بعد وجود قرار مبدئي أو تأكيد."}, status=200)
+            return Response({"success": False, "message": ["لا يمكن حذف طلب السلفة بعد وجود قرار مبدئي أو تأكيد."]}, status=400)
 
         instance.delete()
         return Response({"success": True, "message": "تم حذف طلب السلفة بنجاح."}, status=200)
@@ -647,14 +659,14 @@ class AdvanceRequestViewSet(viewsets.ModelViewSet):
         ).first()
 
         if not active_period:
-            raise DjangoValidationError("لا توجد فترة سلف متاحة حالياً.")
+            raise DjangoValidationError(["لا توجد فترة سلف متاحة حالياً."])
 
         if AdvanceRequest.objects.filter(
             user=user,
             advance_type=active_period.advance_type,
             period=active_period
         ).exists():
-            raise DjangoValidationError("لديك بالفعل طلب سلفة مسجل لهذه الفترة.")
+            raise DjangoValidationError(["لديك بالفعل طلب سلفة مسجل لهذه الفترة."])
 
         try:
             serializer.save(
@@ -662,14 +674,9 @@ class AdvanceRequestViewSet(viewsets.ModelViewSet):
                 period=active_period,
                 advance_type=active_period.advance_type
             )
-        except DjangoValidationError as e:
-            messages = []
-            if hasattr(e, "message_dict"):
-                for _, errs in e.message_dict.items():
-                    messages.extend(errs)
-            elif hasattr(e, "messages"):
-                messages.extend(e.messages)
-            raise DjangoValidationError(" ".join(messages))
+        except (DjangoValidationError, ValidationError, Exception) as e:
+            # بدال ما يطلع exception، نرجعه كـ response منظم
+            raise DjangoValidationError(format_error_messages(e))
 
 
 #--------------------------------------------------------------
