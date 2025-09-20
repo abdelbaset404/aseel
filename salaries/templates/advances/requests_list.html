@@ -222,6 +222,22 @@
     font-weight: 600;
     border-radius: .4rem;
   }
+
+  /* ========== ROW STRIPING: 3-Color Cycle ========== */
+  /* ثلاثة ألوان تتكرر لكل صفوف tbody (لا تؤثر على thead) */
+  tbody tr:nth-child(3n+1) {
+    background: #f6fbff; /* لون أزرق فاتح */
+  }
+  tbody tr:nth-child(3n+2) {
+    background: #ffffff; /* أبيض (فاصل نظيف) */
+  }
+  tbody tr:nth-child(3n+3) {
+    background: #fffaf0; /* كريمي فاتح */
+  }
+  /* حافظ على تباين النص وجعل البادجات واضحة فوق الخلفيات */
+  tbody tr td { color: #111827; }
+  tbody tr td .badge { font-weight:600; }
+
 </style>
 
   <h3 class="mb-3">طلبات السلف</h3>
@@ -371,7 +387,7 @@
     </div>
   </div>
 
-  <!-- نافذة تأكيد "Reset شهري" (حذف الكل وتعطيل الفترات) -->
+  <!-- نافذة "Reset شهري" -->
   <div id="reset-monthly-modal" class="modal-backdrop-reset" role="dialog" aria-modal="true" aria-labelledby="reset-monthly-title" style="display:none;">
     <div class="modal-box-reset">
       <h5 id="reset-monthly-title">تحذير هام: حذف جميع طلبات السلف وتعطيل الفترات</h5>
@@ -388,7 +404,7 @@
     </div>
   </div>
 
-  <!-- نافذة تأكيد "حذف طلبات السلفة الأولى" -->
+  <!-- نافذة "حذف طلبات السلفة الأولى" -->
   <div id="delete-first-modal" class="modal-backdrop-reset" role="dialog" aria-modal="true" aria-labelledby="delete-first-title" style="display:none;">
     <div class="modal-box-reset">
       <h5 id="delete-first-title">تحذير: حذف جميع طلبات السلفة الأولى</h5>
