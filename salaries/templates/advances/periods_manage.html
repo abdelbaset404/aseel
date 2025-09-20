@@ -12,11 +12,13 @@
         <input type="hidden" name="which" value="FIRST">
         <div class="form-group">
           <label>من</label>
-          <input type="date" name="start_date" class="form-control" required value="{{ first_period.start_date|date:'Y-m-d' }}">
+          <input type="text" id="first_start" name="start_date" class="form-control"
+                 value="{{ first_period.start_date.day }}" required>
         </div>
         <div class="form-group">
           <label>إلى</label>
-          <input type="date" name="end_date" class="form-control" required value="{{ first_period.end_date|date:'Y-m-d' }}">
+          <input type="text" id="first_end" name="end_date" class="form-control"
+                 value="{{ first_period.end_date.day }}" required>
         </div>
         <div class="form-group" style="margin:.5rem 0;">
           <label>
@@ -36,11 +38,13 @@
         <input type="hidden" name="which" value="SECOND">
         <div class="form-group">
           <label>من</label>
-          <input type="date" name="start_date" class="form-control" required value="{{ second_period.start_date|date:'Y-m-d' }}">
+          <input type="text" id="second_start" name="start_date" class="form-control"
+                 value="{{ second_period.start_date.day }}" required>
         </div>
         <div class="form-group">
           <label>إلى</label>
-          <input type="date" name="end_date" class="form-control" required value="{{ second_period.end_date|date:'Y-m-d' }}">
+          <input type="text" id="second_end" name="end_date" class="form-control"
+                 value="{{ second_period.end_date.day }}" required>
         </div>
         <div class="form-group" style="margin:.5rem 0;">
           <label>
@@ -57,4 +61,41 @@
     <a class="btn" href="{% url 'adv-requests' %}"><i class="fas fa-list"></i> الذهاب لطلبات السُلف</a>
   </div>
 </div>
+
+<!-- Flatpickr CSS & JS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+  function initDayOnlyPicker(id, initialDay) {
+    let today = new Date();
+    flatpickr(id, {
+      dateFormat: "d",   // نخزن اليوم فقط
+      defaultDate: initialDay ? initialDay : today, // لو في قيمة جاية من السيرفر استخدمها
+      minDate: "today",
+      onReady: function(selectedDates, dateStr, instance) {
+        // ثبّت الشهر والسنة فقط
+        instance.currentYear = today.getFullYear();
+        instance.currentMonth = today.getMonth();
+        instance.redraw();
+      },
+      onMonthChange: function(selectedDates, dateStr, instance) {
+        // لو حاول يغيّر الشهر → نرجعه للشهر الحالي
+        instance.currentYear = today.getFullYear();
+        instance.currentMonth = today.getMonth();
+        instance.redraw();
+      },
+      onYearChange: function(selectedDates, dateStr, instance) {
+        // لو حاول يغيّر السنة → نرجعها للسنة الحالية
+        instance.currentYear = today.getFullYear();
+        instance.redraw();
+      }
+    });
+  }
+
+  // استدعاء مع القيمة الحالية من السيرفر
+  initDayOnlyPicker("#first_start", "{{ first_period.start_date.day }}");
+  initDayOnlyPicker("#first_end", "{{ first_period.end_date.day }}");
+  initDayOnlyPicker("#second_start", "{{ second_period.start_date.day }}");
+  initDayOnlyPicker("#second_end", "{{ second_period.end_date.day }}");
+</script>
 {% endblock %}
