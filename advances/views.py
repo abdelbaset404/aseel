@@ -237,6 +237,10 @@ def user_delete_advance(request, pk: int):
 # إدارة مواعيد السلف (أدمن)
 # ======================
 
+from django.contrib import messages
+from django.utils import timezone
+from datetime import datetime, date
+
 @user_passes_test(is_admin)
 def periods_manage(request):
     """إدارة ميعاد السُلفة: سجل واحد فعلي لكل نوع."""
@@ -255,17 +259,41 @@ def periods_manage(request):
 
     first_period = get_single(AdvanceType.FIRST)
     second_period = get_single(AdvanceType.SECOND)
+    today = timezone.localdate()
 
     if request.method == 'POST':
         which = request.POST.get('which')          # 'FIRST' or 'SECOND'
-        s = request.POST.get('start_date')         # 'YYYY-MM-DD'
-        e = request.POST.get('end_date')           # 'YYYY-MM-DD'
+        s = request.POST.get('start_date')         # دلوقتي هيكون "YYYY-MM-DD" أو "day" حسب الفورم
+        e = request.POST.get('end_date')
         active = request.POST.get('is_active') in ('on', 'true', '1')
 
         try:
-            s_date = datetime.strptime(s, '%Y-%m-%d').date()
-            e_date = datetime.strptime(e, '%Y-%m-%d').date()
+            # لو الفورم بعت يوم فقط (عدد صحيح)
+            if s.isdigit() and e.isdigit():
+                year = today.year
+                month = today.month
+                s_date = date(year, month, int(s))
+                e_date = date(year, month, int(e))
+            else:
+                # fallback: لو بعت القيمة كاملة "YYYY-MM-DD"
+                s_date = datetime.strptime(s, '%Y-%m-%d').date()
+                e_date = datetime.strptime(e, '%Y-%m-%d').date()
         except Exception:
+            return redirect('adv-periods')
+
+        # الشرط 1: البداية لازم تكون اليوم أو بعده
+        if s_date < today:
+            messages.error(request, "لا يمكن اختيار تاريخ بداية قديم.")
+            return redirect('adv-periods')
+
+        # الشرط 2: النهاية لازم تكون بعد البداية
+        if e_date < s_date:
+            messages.error(request, "تاريخ النهاية لا يمكن أن يكون قبل البداية.")
+            return redirect('adv-periods')
+
+        # الشرط 3: لازم السُلفة الثانية تبدأ بعد الأولى
+        if which == AdvanceType.SECOND and s_date <= first_period.end_date:
+            messages.error(request, "بداية السُلفة الثانية يجب أن تكون بعد نهاية السُلفة الأولى.")
             return redirect('adv-periods')
 
         p = first_period if which == AdvanceType.FIRST else second_period
@@ -281,13 +309,13 @@ def periods_manage(request):
     return render(request, 'advances/periods_manage.html', {
         'first_period': first_period,
         'second_period': second_period,
+        'today': today,
     })
 
 
 # ======================
 # إدارة الطلبات (أدمن)
 # ======================
-
 @user_passes_test(is_admin)
 def requests_list(request):
     """قائمة الطلبات + فلاتر + بحث بالاسم"""
