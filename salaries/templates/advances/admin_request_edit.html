@@ -1,32 +1,168 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container">
-  <h3>تعديل طلب (أدمن)</h3>
-  {% if err %}<div class="alert alert-danger">{{ err }}</div>{% endif %}
-  <p><strong>الموظف:</strong> {{ obj.user.get_full_name|default:obj.user.username }}</p>
-  <p><strong>النوع:</strong> {{ obj.get_advance_type_display }} | <strong>الفترة:</strong> {{ obj.period.start_date }} → {{ obj.period.end_date }}</p>
-  <form method="post">
-    {% csrf_token %}
-    <div class="mb-2">
-      <label class="form-label">المبلغ</label>
-      <input type="number" step="0.01" name="amount" value="{{ obj.amount }}" class="form-control" {% if obj.locked %}disabled{% endif %}>
+<style>
+  /* لوحة رئيسية */
+  .adv-card {
+    max-width: 900px;
+    margin: 1.8rem auto;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(20,20,40,0.08);
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid rgba(15,15,30,0.03);
+  }
+  /* override small-muted only inside the header so other small-muted تبقى كما هي */
+.adv-header .small-muted {
+  color: rgba(255, 255, 255, 0.95);    /* لون فاتح واضح على الأزرق */
+  font-weight: 600;                    /* اختياري: يخلي النص أوضح */
+  text-shadow: 0 1px 2px rgba(0,0,0,0.25); /* ظل خفيف لقراءة أفضل */
+  font-size: 0.82rem;
+}
+
+  .adv-header {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding: 18px 22px;
+    background: linear-gradient(90deg,#4f46e5 0%, #06b6d4 100%);
+    color: #fff;
+  }
+  .adv-title { font-size:1.125rem; font-weight:700; margin:0; }
+  .adv-sub { font-size:0.9rem; opacity:0.95; }
+
+  .adv-body { padding: 22px; }
+  .meta-row { display:flex; gap:1rem; flex-wrap:wrap; align-items:center; margin-bottom:1rem; }
+  .meta-item { background: #f8fafc; padding:10px 12px; border-radius:8px; font-size:0.95rem; color:#111827; box-shadow: inset 0 -1px 0 rgba(0,0,0,0.02); }
+
+  .status-badge {
+    display:inline-block;
+    padding:6px 10px;
+    border-radius:999px;
+    font-weight:600;
+    font-size:0.85rem;
+    color:#fff;
+  }
+  .st-under { background:#f59e0b }    /* under review - amber */
+  .st-approved { background:#10b981 } /* approved - green */
+  .st-rejected { background:#ef4444 } /* rejected - red */
+
+  .field-grid { display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-bottom:14px; }
+  @media (max-width:700px){ .field-grid{ grid-template-columns: 1fr; } }
+
+  label.form-label { font-weight:600; margin-bottom:6px; display:block; color:#111827; }
+  .form-control, .form-select, textarea.form-control {
+    width:100%; padding:10px 12px; border-radius:8px; border:1px solid #e6edf3; background:#fff;
+    box-shadow:none; font-size:0.95rem;
+  }
+  textarea.form-control { min-height:110px; resize:vertical; }
+
+  .actions { display:flex; gap:10px; justify-content:flex-end; align-items:center; margin-top:8px; }
+  .btn-primary {
+    background: linear-gradient(90deg,#4338ca,#06b6d4);
+    color:white; border:none; padding:9px 14px; border-radius:10px; font-weight:700;
+    box-shadow: 0 6px 18px rgba(6,182,212,0.12);
+  }
+  .btn-light {
+    background: #f3f4f6; color:#111827; border-radius:10px; padding:8px 12px; font-weight:600; border:none;
+  }
+  .locked-note {
+    display:flex; gap:8px; align-items:center; background:#fff7ed; color:#92400e; padding:10px 12px; border-radius:8px; margin-bottom:12px;
+    border:1px solid rgba(245,158,11,0.12);
+  }
+
+  .small-muted { color:#6b7280; font-size:0.9rem; }
+</style>
+
+<div class="adv-card">
+  <div class="adv-header">
+    <div>
+      <h3 class="adv-title">تعديل طلب السلفة — لوحة الإدارة</h3>
+      <div class="adv-sub">تحكم سريع في حالة السلفة وتفاصيلها</div>
     </div>
-    <div class="mb-2">
-      <label class="form-label">الحالة</label>
-      <select name="status" class="form-select" {% if obj.locked %}disabled{% endif %}>
-        <option value="UNDER_REVIEW" {% if obj.status == 'UNDER_REVIEW' %}selected{% endif %}>تحت المراجعة</option>
-        <option value="APPROVED" {% if obj.status == 'APPROVED' %}selected{% endif %}>تم القبول</option>
-        <option value="REJECTED" {% if obj.status == 'REJECTED' %}selected{% endif %}>تم الرفض</option>
-      </select>
-    </div>
-    <div class="mb-2">
-      <label class="form-label">ملاحظات</label>
-      <textarea name="notes" class="form-control" rows="3" {% if obj.locked %}disabled{% endif %}>{{ obj.notes }}</textarea>
-    </div>
-    {% if not obj.locked %}
-      <button class="btn btn-primary">حفظ</button>
+
+    <div style="text-align:right;">
+      {% comment %} حالة الطلب كبادج ملون {% endcomment %}
+      {% if obj.status == 'UNDER_REVIEW' %}
+  <span class="status-badge st-under">
+    {{ obj.get_status_display }}
+    {% if obj.admin_decision %}
+      &nbsp;– مقترح: {{ obj.get_admin_decision_display }}
     {% endif %}
-    <a class="btn btn-light" href="{% url 'adv-requests' %}">رجوع</a>
-  </form>
+  </span>
+{% elif obj.status == 'APPROVED' %}
+  <span class="status-badge st-approved">{{ obj.get_status_display }}</span>
+{% elif obj.status == 'REJECTED' %}
+  <span class="status-badge st-rejected">{{ obj.get_status_display }}</span>
+{% else %}
+  <span class="status-badge" style="background:#6b7280">{{ obj.get_status_display|default:obj.status }}</span>
+{% endif %}
+
+      <div style="font-size:0.82rem; margin-top:8px;" class="small-muted">رقم الطلب: {{ obj.pk }} &nbsp;•&nbsp; تم الإنشاء: {{ obj.created_at|default:"-" }}</div>
+    </div>
+  </div>
+
+  <div class="adv-body">
+    {% if obj.locked %}
+      <div class="locked-note">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex:0 0 18px;">
+          <path d="M12 2C9.238 2 7 4.238 7 7v3H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-1V7c0-2.762-2.238-5-5-5z" fill="#92400e"/>
+        </svg>
+        <div>
+          <strong>حالة مُقفلة</strong>
+          <div class="small-muted">هذا الطلب مقفل ولا يمكن تعديله حالياً.</div>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="meta-row">
+      <div class="meta-item"><strong>الموظف</strong><div style="margin-top:6px;">{{ obj.user.get_full_name|default:obj.user.username }}</div></div>
+      <div class="meta-item"><strong>نوع السلفة</strong><div style="margin-top:6px;">{{ obj.get_advance_type_display }}</div></div>
+      <div class="meta-item"><strong>الفترة</strong><div style="margin-top:6px;">{{ obj.period.start_date }} → {{ obj.period.end_date }}</div></div>
+      <div class="meta-item">
+  <strong>الحالة الحالية</strong>
+  <div style="margin-top:6px;">
+    {{ obj.get_status_display|default:obj.status }}
+    {% if obj.status == 'UNDER_REVIEW' and obj.admin_decision %}
+      &nbsp;– مقترح: {{ obj.get_admin_decision_display }}
+    {% endif %}
+  </div>
+</div>
+    </div>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="field-grid">
+        <div>
+          <label class="form-label">المبلغ</label>
+          <input type="number" step="0.01" name="amount" value="{{ obj.amount }}" class="form-control" {% if obj.locked %}disabled{% endif %}>
+        </div>
+
+        <div>
+          <label class="form-label">الحالة</label>
+          <select name="status" class="form-select" {% if obj.locked %}disabled{% endif %}>
+            <option value="UNDER_REVIEW" {% if obj.status == 'UNDER_REVIEW' %}selected{% endif %}>تحت المراجعة</option>
+            <option value="APPROVED" {% if obj.status == 'APPROVED' %}selected{% endif %}>تم القبول</option>
+            <option value="REJECTED" {% if obj.status == 'REJECTED' %}selected{% endif %}>تم الرفض</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <label class="form-label">ملاحظات</label>
+        <textarea name="notes" class="form-control" rows="5" {% if obj.locked %}disabled{% endif %}>{{ obj.notes }}</textarea>
+      </div>
+
+      {% if err %}
+        <div class="alert alert-danger" role="alert">{{ err }}</div>
+      {% endif %}
+
+      <div class="actions">
+        <a class="btn btn-light" href="{% url 'adv-requests' %}">رجوع</a>
+        {% if not obj.locked %}
+          <button class="btn btn-primary" type="submit">حفظ التعديلات</button>
+        {% endif %}
+      </div>
+    </form>
+  </div>
 </div>
 {% endblock %}
